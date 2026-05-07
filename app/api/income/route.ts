@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { getServerClient } from '@/lib/supabase';
 
@@ -5,6 +6,9 @@ import { getServerClient } from '@/lib/supabase';
 export async function GET(request: Request) {
   try {
     const supabase = getServerClient() as any;
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
     const { searchParams } = new URL(request.url);
     const projectId = searchParams.get('project_id');
     const clientId = searchParams.get('client_id');
@@ -40,6 +44,9 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const supabase = getServerClient() as any;
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
     const body = await request.json();
 
     const { data, error } = await supabase
@@ -76,3 +83,4 @@ export async function POST(request: Request) {
     );
   }
 }
+

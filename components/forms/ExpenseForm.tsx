@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -18,7 +19,7 @@ import {
 } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { toast } from '@/hooks/use-toast';
-import { Plus } from 'lucide-react';
+import { Plus, UploadCloud, Loader2 } from 'lucide-react';
 
 const expenseSchema = z.object({
   project_id: z.string().uuid('Please select a project'),
@@ -37,31 +38,17 @@ const expenseSchema = z.object({
 
 type ExpenseFormData = z.infer<typeof expenseSchema>;
 
-interface Project {
-  id: string;
-  name: string;
-}
-
-interface Category {
-  id: string;
-  name: string;
-}
-
-interface SubCategory {
-  id: string;
-  name: string;
-  category_id: string;
-}
-
-interface Vendor {
-  id: string;
-  name: string;
-  type: string;
-}
+interface Project { id: string; name: string; }
+interface Category { id: string; name: string; }
+interface SubCategory { id: string; name: string; category_id: string; }
+interface Vendor { id: string; name: string; type: string; }
 
 export function ExpenseForm() {
   const [open, setOpen] = useState(false);
+  const [file, setFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
   const queryClient = useQueryClient();
+  const supabase = createClientComponentClient();
 
   const { register, handleSubmit, watch, setValue, formState: { errors }, reset } = useForm<ExpenseFormData>({
     resolver: zodResolver(expenseSchema),
@@ -73,46 +60,32 @@ export function ExpenseForm() {
 
   const selectedCategory = watch('category_id');
 
-  // Fetch projects
   const { data: projects } = useQuery<Project[]>({
     queryKey: ['projects'],
-    queryFn: async () => {
-      const res = await fetch('/api/projects?status=active');
-      return res.json();
-    },
+    queryFn: async () => (await fetch('/api/projects?status=active')).json(),
   });
 
-  // Fetch categories
   const { data: categories } = useQuery<Category[]>({
     queryKey: ['categories'],
-    queryFn: async () => {
-      const res = await fetch('/api/expenses/categories');
-      return res.json();
-    },
+    queryFn: async () => (await fetch('/api/expenses/categories')).json(),
   });
 
-  // Fetch sub-categories
   const { data: subcategories } = useQuery<SubCategory[]>({
     queryKey: ['subcategories', selectedCategory],
     queryFn: async () => {
       if (!selectedCategory) return [];
-      const res = await fetch(`/api/expenses/subcategories?category_id=${selectedCategory}`);
-      return res.json();
+      return (await fetch(`/api/expenses/subcategories?category_id=${selectedCategory}`)).json();
     },
     enabled: !!selectedCategory,
   });
 
-  // Fetch vendors
   const { data: vendors } = useQuery<Vendor[]>({
     queryKey: ['vendors'],
-    queryFn: async () => {
-      const res = await fetch('/api/vendors');
-      return res.json();
-    },
+    queryFn: async () => (await fetch('/api/vendors')).json(),
   });
 
   const mutation = useMutation({
-    mutationFn: async (data: ExpenseFormData) => {
+    mutationFn: async (data: ExpenseFormData & { receipt_url?: string }) => {
       const res = await fetch('/api/expenses', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -132,6 +105,7 @@ export function ExpenseForm() {
         description: 'The expense has been successfully added.',
       });
       reset();
+      setFile(null);
       setOpen(false);
     },
     onError: () => {
@@ -143,8 +117,39 @@ export function ExpenseForm() {
     },
   });
 
-  const onSubmit = (data: ExpenseFormData) => {
-    mutation.mutate(data);
+  const onSubmit = async (data: ExpenseFormData) => {
+    try {
+      let receipt_url = null;
+      if (file) {
+        setIsUploading(true);
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Math.random()}.${fileExt}`;
+        const filePath = `${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('bill-photos')
+          .upload(filePath, file);
+
+        if (uploadError) throw uploadError;
+
+        const { data: publicUrlData } = supabase.storage
+          .from('bill-photos')
+          .getPublicUrl(filePath);
+
+        receipt_url = publicUrlData.publicUrl;
+        setIsUploading(false);
+      }
+
+      mutation.mutate({ ...data, receipt_url: receipt_url || undefined });
+    } catch (error) {
+      setIsUploading(false);
+      console.error('Upload error:', error);
+      toast({
+        title: 'Upload failed',
+        description: 'Could not upload the bill photo.',
+        variant: 'destructive',
+      });
+    }
   };
 
   return (
@@ -155,12 +160,11 @@ export function ExpenseForm() {
           Add Expense
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Record New Expense</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          {/* Project */}
           <div className="space-y-2">
             <Label htmlFor="project_id">Project *</Label>
             <Select onValueChange={(value) => setValue('project_id', value)}>
@@ -180,47 +184,46 @@ export function ExpenseForm() {
             )}
           </div>
 
-          {/* Category */}
-          <div className="space-y-2">
-            <Label htmlFor="category_id">Category *</Label>
-            <Select onValueChange={(value) => setValue('category_id', value)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select category" />
-              </SelectTrigger>
-              <SelectContent>
-                {Array.isArray(categories) && categories.map((cat) => (
-                  <SelectItem key={cat.id} value={cat.id}>
-                    {cat.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {errors.category_id && (
-              <p className="text-sm text-red-500">{errors.category_id.message}</p>
-            )}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="category_id">Category *</Label>
+              <Select onValueChange={(value) => setValue('category_id', value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Array.isArray(categories) && categories.map((cat) => (
+                    <SelectItem key={cat.id} value={cat.id}>
+                      {cat.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.category_id && (
+                <p className="text-sm text-red-500">{errors.category_id.message}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="subcategory_id">Sub-Category *</Label>
+              <Select onValueChange={(value) => setValue('subcategory_id', value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select sub-category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Array.isArray(subcategories) && subcategories.map((sub) => (
+                    <SelectItem key={sub.id} value={sub.id}>
+                      {sub.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.subcategory_id && (
+                <p className="text-sm text-red-500">{errors.subcategory_id.message}</p>
+              )}
+            </div>
           </div>
 
-          {/* Sub-category */}
-          <div className="space-y-2">
-            <Label htmlFor="subcategory_id">Sub-Category *</Label>
-            <Select onValueChange={(value) => setValue('subcategory_id', value)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select sub-category" />
-              </SelectTrigger>
-              <SelectContent>
-                {Array.isArray(subcategories) && subcategories.map((sub) => (
-                  <SelectItem key={sub.id} value={sub.id}>
-                    {sub.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {errors.subcategory_id && (
-              <p className="text-sm text-red-500">{errors.subcategory_id.message}</p>
-            )}
-          </div>
-
-          {/* Vendor */}
           <div className="space-y-2">
             <Label htmlFor="vendor_id">Vendor / Labour</Label>
             <Select onValueChange={(value) => setValue('vendor_id', value)}>
@@ -237,31 +240,44 @@ export function ExpenseForm() {
             </Select>
           </div>
 
-          {/* Amount */}
-          <div className="space-y-2">
-            <Label htmlFor="amount">Amount (₹) *</Label>
-            <Input
-              id="amount"
-              type="number"
-              placeholder="Enter amount"
-              {...register('amount')}
-            />
-            {errors.amount && (
-              <p className="text-sm text-red-500">{errors.amount.message}</p>
-            )}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="amount">Amount (₹) *</Label>
+              <Input
+                id="amount"
+                type="number"
+                placeholder="Enter amount"
+                {...register('amount')}
+              />
+              {errors.amount && (
+                <p className="text-sm text-red-500">{errors.amount.message}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="expense_date">Date *</Label>
+              <Input
+                id="expense_date"
+                type="date"
+                {...register('expense_date')}
+              />
+            </div>
           </div>
 
-          {/* Date */}
           <div className="space-y-2">
-            <Label htmlFor="expense_date">Date *</Label>
-            <Input
-              id="expense_date"
-              type="date"
-              {...register('expense_date')}
-            />
+            <Label>Bill Photo / Receipt</Label>
+            <div className="flex items-center gap-4">
+              <Input
+                id="receipt"
+                type="file"
+                accept="image/*,.pdf"
+                onChange={(e) => setFile(e.target.files?.[0] || null)}
+                className="cursor-pointer"
+              />
+              {file && <span className="text-sm text-muted-foreground whitespace-nowrap overflow-hidden text-ellipsis w-32">{file.name}</span>}
+            </div>
           </div>
 
-          {/* Payment Status */}
           <div className="space-y-2">
             <Label htmlFor="payment_status">Payment Status *</Label>
             <Select 
@@ -279,35 +295,34 @@ export function ExpenseForm() {
             </Select>
           </div>
 
-          {/* Payment Mode (conditional) */}
           {watch('payment_status') === 'paid' && (
-            <div className="space-y-2">
-              <Label htmlFor="payment_mode">Payment Mode</Label>
-              <Select onValueChange={(value) => setValue('payment_mode', value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select mode" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="cash">Cash</SelectItem>
-                  <SelectItem value="upi">UPI</SelectItem>
-                  <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
-                  <SelectItem value="cheque">Cheque</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="payment_mode">Payment Mode</Label>
+                <Select onValueChange={(value) => setValue('payment_mode', value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select mode" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="cash">Cash</SelectItem>
+                    <SelectItem value="upi">UPI</SelectItem>
+                    <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
+                    <SelectItem value="cheque">Cheque</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="reference_number">Reference Number</Label>
+                <Input
+                  id="reference_number"
+                  placeholder="UTR / Cheque"
+                  {...register('reference_number')}
+                />
+              </div>
             </div>
           )}
 
-          {/* Reference Number */}
-          <div className="space-y-2">
-            <Label htmlFor="reference_number">Reference Number</Label>
-            <Input
-              id="reference_number"
-              placeholder="Invoice / UTR / Cheque number"
-              {...register('reference_number')}
-            />
-          </div>
-
-          {/* Notes */}
           <div className="space-y-2">
             <Label htmlFor="notes">Notes</Label>
             <Textarea
@@ -317,8 +332,13 @@ export function ExpenseForm() {
             />
           </div>
 
-          <Button type="submit" className="w-full" disabled={mutation.isPending}>
-            {mutation.isPending ? 'Saving...' : 'Record Expense'}
+          <Button type="submit" className="w-full" disabled={mutation.isPending || isUploading}>
+            {(mutation.isPending || isUploading) ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                {isUploading ? 'Uploading Receipt...' : 'Saving...'}
+              </>
+            ) : 'Record Expense'}
           </Button>
         </form>
       </DialogContent>

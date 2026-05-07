@@ -1,9 +1,13 @@
+export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { getServerClient } from '@/lib/supabase';
 
 export async function GET() {
   try {
     const supabase = getServerClient();
+    
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     // Get total receivables (all income)
     const { data: incomeData, error: incomeError } = await supabase
@@ -70,3 +74,4 @@ export async function GET() {
     );
   }
 }
+

@@ -1,3 +1,6 @@
+
+'use client';
+
 import { KpiCards } from '@/components/dashboard/KpiCards';
 import { ProjectGrid } from '@/components/dashboard/ProjectGrid';
 import { AlertFeed } from '@/components/dashboard/AlertFeed';

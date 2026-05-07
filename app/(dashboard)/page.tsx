@@ -1,4 +1,3 @@
-
 'use client';
 
 import { KpiCards } from '@/components/dashboard/KpiCards';

@@ -1,139 +1,115 @@
 # Jaani Constructions - Funds Management System
 
-A robust funds tracking and project profitability dashboard for construction consultancy agencies.
+[![Next.js](https://img.shields.io/badge/Next.js-14-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
+[![Supabase](https://img.shields.io/badge/Supabase-Database-green?style=for-the-badge&logo=supabase)](https://supabase.com/)
+[![Vercel](https://img.shields.io/badge/Vercel-Deployment-black?style=for-the-badge&logo=vercel)](https://vercel.com/)
+[![License: Private](https://img.shields.io/badge/License-Private-red?style=for-the-badge)](LICENSE)
 
-## Features
+A premium, enterprise-grade funds tracking and project profitability dashboard specifically engineered for construction consultancy agencies.
 
-- 📊 Real-time dashboard with KPIs (Receivables, Payables, Net Position)
-- 🏗️ Project-wise expense tracking across 3 categories: Vendors, Raw Material, Labour/Broker
-- 💰 Client income tracking with milestone-based payments
-- 📈 Project P&L with profit margin calculations
-- 🔔 Overdue payment alerts
-- 📱 Mobile-first responsive design
+[**🌐 View Live Demo**](https://jc-funds-management.vercel.app)
 
-## Tech Stack
+---
 
-- **Frontend:** Next.js 14, React, TypeScript, Tailwind CSS, shadcn/ui
-- **Backend:** Next.js API Routes, Node.js
-- **Database:** Supabase (PostgreSQL)
-- **State Management:** TanStack Query (React Query)
-- **Forms:** React Hook Form + Zod
-- **Charts:** Recharts
-- **Deployment:** Vercel
+## 🏗️ Project Overview
 
-## Quick Start
+Jaani Constructions Funds Management System provides a unified platform to track multi-project finances with high precision. It implements a **Maker-Checker security model**, ensuring that while accountants can record data, only the owner can finalize sensitive financial transactions like payments.
 
-### 1. Clone and Install
+### Key Value Propositions
+- **Financial Integrity**: Project-wise P&L tracking with real-time margin calculations.
+- **Operational Oversight**: 360° view of Vendors, Raw Material, and Labour costs.
+- **Liquidity Management**: Real-time KPI tracking for Receivables, Payables, and Net Position.
+- **Audit Ready**: Comprehensive transaction history for every project and vendor.
 
+---
+
+## ✨ Core Features
+
+### 📊 Intelligence Dashboard
+- **Real-time KPIs**: Instant visibility into total receivables, payables, and net cash position.
+- **Smart Alerts**: Automated feed for overdue client payments and pending vendor dues.
+- **Activity Stream**: Audit log of recent financial activities across all projects.
+
+### 🏗️ Project Management
+- **Milestone Tracking**: Link client payments to physical site progress.
+- **Categorized Expenses**: Granular tracking across Vendors, Raw Materials, and Labour.
+- **Profitability Analysis**: Project-wise income vs. expense breakdown with margin % tracking.
+
+### 💰 Vendor & Ledger Management
+- **Vendor Specific Ledgers**: Full transaction history and outstanding balance tracking for every vendor.
+- **Maker-Checker Payments**: Secure payment flow where accountants request and owners approve.
+- **Receipt Management**: Upload and track bill copies directly against expenses.
+
+---
+
+## 🛠️ Technical Architecture
+
+| Layer | Technology | Purpose |
+|-------|------------|---------|
+| **Frontend** | Next.js 14 (App Router) | High-performance React framework with SSR/ISR |
+| **Styling** | Tailwind CSS + shadcn/ui | Premium, mobile-first design system |
+| **Backend** | Next.js API Routes | Serverless edge functions for data processing |
+| **Database** | Supabase (PostgreSQL) | Real-time DB with Row Level Security (RLS) |
+| **Auth** | Supabase Auth | Secure Email/Password & Google OAuth integration |
+| **State** | TanStack Query v5 | Robust data fetching and server-state caching |
+| **Validation** | Zod + React Hook Form | Strict type safety for all data entries |
+
+---
+
+## 🚀 Quick Start
+
+### 1. Prerequisites
+- Node.js 18+
+- Supabase Account
+
+### 2. Installation
 ```bash
-git clone <your-repo-url>
-cd jaani-funds
+git clone https://github.com/Deepank143/JC-Funds-Management.git
+cd JC-Funds-Management
 npm install
 ```
 
-### 2. Environment Setup
-
-Copy `.env.local` and fill in your Supabase credentials:
-
-```bash
-cp .env.local.example .env.local
+### 3. Environment Variables
+Create a `.env.local` file with the following:
+```env
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 ```
 
-Required variables:
-- `NEXT_PUBLIC_SUPABASE_URL`
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-- `SUPABASE_SERVICE_ROLE_KEY`
+### 4. Database Initialization
+1. Run the `schema.sql` in your Supabase SQL Editor.
+2. Ensure the `bill-photos` storage bucket is created with public access for previews.
 
-### 3. Database Setup
-
-1. Create a new project on [Supabase](https://supabase.com)
-2. Run the SQL schema from `schema.sql` in the SQL Editor
-3. Seed data will be automatically inserted
-4. Enable Storage bucket `bill-photos` for receipt uploads
-
-### 4. Run Development Server
-
+### 5. Development
 ```bash
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000)
+---
 
-### 5. Deploy to Vercel
+## 📁 Repository Structure
 
-```bash
-npm run build
-```
-
-Or connect your GitHub repo to [Vercel](https://vercel.com) for automatic deployments.
-
-## Project Structure
-
-```
-jaani-funds/
-├── app/                    # Next.js app router
-│   ├── api/               # API routes
-│   ├── (dashboard)/       # Dashboard pages
-│   └── layout.tsx         # Root layout
-├── components/
-│   ├── dashboard/         # Dashboard components
-│   ├── forms/             # Form components
-│   ├── ui/                # shadcn/ui components
-│   └── providers/         # Context providers
-├── lib/
-│   ├── supabase.ts        # Supabase clients
-│   └── utils.ts           # Utility functions
-├── types/
-│   └── supabase.ts        # TypeScript types
-├── schema.sql             # Database schema
-└── package.json
-```
-
-## Default Expense Categories
-
-### Vendors
-- Electrical, Plumbing, Flooring, Carpentry, Painting
-- False Ceiling, Equipment Rental, Transport
-
-### Raw Material
-- Cement, Steel (TMT), Sand, Aggregate
-- Bricks/Blocks, Tiles, Sanitary Ware, Paint, Hardware
-
-### Labour / Broker
-- Mason, Helper, Carpenter, Supervisor
-- Broker Commission
-
-## API Endpoints
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/dashboard/summary` | Dashboard KPIs |
-| GET | `/api/projects` | List projects |
-| POST | `/api/projects` | Create project |
-| GET | `/api/expenses` | List expenses |
-| POST | `/api/expenses` | Create expense |
-| GET | `/api/income` | List income |
-| POST | `/api/income` | Record income |
-
-## Authentication
-
-- Supabase Auth with Email/Password and Google OAuth
-- Role-based access: Owner, Accountant, Viewer
-- Row Level Security (RLS) enabled on all tables
-
-## Future Enhancements
-
-- [ ] WhatsApp integration for payment reminders
-- [ ] GST invoice generation
-- [ ] Bank statement reconciliation
-- [ ] Labour attendance tracking
-- [ ] Mobile app (React Native)
-- [ ] Multi-company support
-
-## License
-
-Private - For Jaani Constructions use only.
+- `app/` - Next.js 14 App Router (Auth, Dashboard, API)
+- `components/` - Atomic UI design system (Dashboard, Forms, Layout)
+- `contexts/` - Global state (Admin/Maker-Checker logic)
+- `lib/` - Shared utilities and lazy-loaded Supabase clients
+- `types/` - Database and application type definitions
+- `schema.sql` - Single-source-of-truth database architecture
 
 ---
 
-Built for Harsh Jani, Owner - Jaani Constructions
+## 📅 Roadmap (Phase 2)
+- [ ] **WhatsApp Bot**: Automated payment reminders for clients.
+- [ ] **GST Module**: Automated tax calculation and invoice generation.
+- [ ] **Attendance**: QR-based labour attendance linked to payroll.
+- [ ] **Analytics**: Predictive cash flow forecasting based on milestone dates.
+
+---
+
+## 📝 License
+Proprietary software for **Jaani Constructions**. All rights reserved.
+
+---
+
+**Built with ❤️ for Harsh Jani**

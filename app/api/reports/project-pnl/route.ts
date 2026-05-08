@@ -15,7 +15,7 @@ export async function GET(request: Request) {
     // Fetch projects
     const { data: projects, error: projectsError } = await supabase
       .from('projects')
-      .select('id, name, budget, status, client_id, clients(name)')
+      .select('id, name, contract_value, status, client_id, clients(name)')
       .eq('status', status);
 
     if (projectsError) throw projectsError;

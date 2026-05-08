@@ -11,21 +11,28 @@ import {
 } from '@/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, Download, FileText, FileSpreadsheet } from 'lucide-react';
+import { Loader2, Download, FileText, FileSpreadsheet, AlertCircle } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { formatINR } from '@/lib/utils';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export default function ReportsPage() {
-  const { data: report, isLoading } = useQuery({
+  const { data: report, isLoading, error } = useQuery({
     queryKey: ['reports', 'project-pnl'],
     queryFn: async () => {
       const res = await fetch('/api/reports/project-pnl');
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Failed to fetch report');
+      }
       return res.json();
     },
+    retry: 1
   });
 
   const exportPDF = () => {
-    if (!report) return;
+    if (!report || !report.projects || !report.summary) return;
     
     const doc = new jsPDF();
     doc.setFontSize(20);
@@ -71,7 +78,7 @@ export default function ReportsPage() {
   };
 
   const exportCSV = () => {
-    if (!report) return;
+    if (!report || !report.projects || !report.summary) return;
 
     const headers = ['Project', 'Client', 'Total Income', 'Total Expense', 'Profit', 'Margin (%)'];
     const rows = report.projects.map((p: any) => [
@@ -108,6 +115,18 @@ export default function ReportsPage() {
     document.body.removeChild(link);
   };
 
+  if (error) {
+    return (
+      <Alert variant="destructive" className="my-6">
+        <AlertCircle className="h-4 w-4" />
+        <AlertTitle>Error Loading Report</AlertTitle>
+        <AlertDescription>
+          {error instanceof Error ? error.message : 'An unexpected error occurred while generating the report.'}
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -116,26 +135,26 @@ export default function ReportsPage() {
           <p className="text-muted-foreground">Company-wide profit and loss summary.</p>
         </div>
         <div className="flex space-x-2">
-          <Button variant="outline" onClick={exportCSV} disabled={isLoading || !report}>
+          <Button variant="outline" onClick={exportCSV} disabled={isLoading || !report?.projects}>
             <FileSpreadsheet className="mr-2 h-4 w-4" />
             Export CSV
           </Button>
-          <Button onClick={exportPDF} disabled={isLoading || !report}>
+          <Button onClick={exportPDF} disabled={isLoading || !report?.projects}>
             <FileText className="mr-2 h-4 w-4" />
             Export PDF
           </Button>
         </div>
       </div>
 
-      {!isLoading && report && (
-        <div className="grid gap-4 md:grid-cols-4">
+      {!isLoading && report?.summary && (
+        <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Income</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-green-600">
-                ₹{report.summary.total_income.toLocaleString()}
+                {formatINR(report.summary.total_income)}
               </div>
             </CardContent>
           </Card>
@@ -145,7 +164,7 @@ export default function ReportsPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-red-600">
-                ₹{report.summary.total_expense.toLocaleString()}
+                {formatINR(report.summary.total_expense)}
               </div>
             </CardContent>
           </Card>
@@ -155,7 +174,7 @@ export default function ReportsPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                ₹{report.summary.total_profit.toLocaleString()}
+                {formatINR(report.summary.total_profit)}
               </div>
             </CardContent>
           </Card>
@@ -165,14 +184,14 @@ export default function ReportsPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {report.summary.overall_margin.toFixed(2)}%
+                {report.summary.overall_margin?.toFixed(2)}%
               </div>
             </CardContent>
           </Card>
         </div>
       )}
 
-      <div className="rounded-md border bg-card">
+      <div className="rounded-md border bg-card overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow>
@@ -202,10 +221,10 @@ export default function ReportsPage() {
                 <TableRow key={p.id}>
                   <TableCell className="font-medium">{p.name}</TableCell>
                   <TableCell>{p.client_name || '-'}</TableCell>
-                  <TableCell className="text-right text-green-600">₹{p.total_income.toLocaleString()}</TableCell>
-                  <TableCell className="text-right text-red-600">₹{p.total_expense.toLocaleString()}</TableCell>
-                  <TableCell className="text-right font-bold">₹{p.profit.toLocaleString()}</TableCell>
-                  <TableCell className="text-right">{p.profit_margin.toFixed(2)}%</TableCell>
+                  <TableCell className="text-right text-green-600">{formatINR(p.total_income)}</TableCell>
+                  <TableCell className="text-right text-red-600">{formatINR(p.total_expense)}</TableCell>
+                  <TableCell className="text-right font-bold">{formatINR(p.profit)}</TableCell>
+                  <TableCell className="text-right">{p.profit_margin?.toFixed(2)}%</TableCell>
                 </TableRow>
               ))
             )}

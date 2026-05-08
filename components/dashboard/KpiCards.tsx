@@ -5,6 +5,7 @@ import { TrendingUp, TrendingDown, Wallet, AlertCircle, Building2, Activity } fr
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatINR } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useAdmin } from '@/contexts/AdminContext';
 
 interface DashboardKPIs {
   totalReceivables: number;
@@ -29,6 +30,8 @@ export function KpiCards() {
     queryFn: fetchDashboardKPIs,
     refetchInterval: 30000, // Refetch every 30 seconds
   });
+
+  const { isAdminMode } = useAdmin();
 
   if (isLoading) {
     return (
@@ -67,6 +70,7 @@ export function KpiCards() {
       color: 'text-emerald-600',
       bgColor: 'bg-emerald-50',
       description: 'From all clients',
+      isSensitive: true,
     },
     {
       title: 'Total Payables',
@@ -75,6 +79,7 @@ export function KpiCards() {
       color: 'text-red-600',
       bgColor: 'bg-red-50',
       description: 'Unpaid expenses',
+      isSensitive: true,
     },
     {
       title: 'Net Position',
@@ -83,6 +88,7 @@ export function KpiCards() {
       color: kpis.netPosition >= 0 ? 'text-blue-600' : 'text-amber-600',
       bgColor: kpis.netPosition >= 0 ? 'bg-blue-50' : 'bg-amber-50',
       description: 'Working capital',
+      isSensitive: true,
     },
     {
       title: 'Active Projects',
@@ -91,6 +97,7 @@ export function KpiCards() {
       color: 'text-violet-600',
       bgColor: 'bg-violet-50',
       description: `${kpis.totalProjects} total projects`,
+      isSensitive: false,
     },
   ];
 
@@ -108,9 +115,15 @@ export function KpiCards() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold tracking-tight">
-              {card.title === 'Active Projects' 
-                ? card.value 
-                : formatINR(card.value)}
+              {card.isSensitive && !isAdminMode ? (
+                <span className="text-muted-foreground/30 font-mono tracking-tighter">
+                  ••••••
+                </span>
+              ) : (
+                card.title === 'Active Projects' 
+                  ? card.value 
+                  : formatINR(card.value)
+              )}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
               {card.description}

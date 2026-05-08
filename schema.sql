@@ -338,6 +338,55 @@ CREATE POLICY "Project budgets modifiable by owner and accountant" ON project_bu
 -- FUNCTIONS
 -- ============================================================
 
+-- Function to get projects with their financial margins
+CREATE OR REPLACE FUNCTION get_projects_with_margins()
+RETURNS TABLE (
+  id UUID,
+  name TEXT,
+  client_name TEXT,
+  location TEXT,
+  status TEXT,
+  contract_value DECIMAL,
+  total_income DECIMAL,
+  total_expenses DECIMAL,
+  profit DECIMAL,
+  profit_margin DECIMAL,
+  start_date DATE,
+  expected_end_date DATE
+) AS $$
+BEGIN
+  -- Set local search_path to public for security hardening
+  SET LOCAL search_path = public;
+  RETURN QUERY
+  SELECT 
+    p.id,
+    p.name,
+    c.name as client_name,
+    p.location,
+    p.status,
+    p.contract_value,
+    COALESCE(i.total, 0) as total_income,
+    COALESCE(e.total, 0) as total_expenses,
+    (COALESCE(i.total, 0) - COALESCE(e.total, 0)) as profit,
+    CASE 
+      WHEN p.contract_value > 0 THEN 
+        ROUND(((COALESCE(i.total, 0) - COALESCE(e.total, 0)) / p.contract_value) * 100, 2)
+      ELSE 0 
+    END as profit_margin,
+    p.start_date,
+    p.expected_end_date
+  FROM projects p
+  JOIN clients c ON c.id = p.client_id
+  LEFT JOIN (
+    SELECT project_id, SUM(amount) as total FROM income GROUP BY project_id
+  ) i ON i.project_id = p.id
+  LEFT JOIN (
+    SELECT project_id, SUM(amount) as total FROM expenses GROUP BY project_id
+  ) e ON e.project_id = p.id
+  ORDER BY p.created_at DESC;
+END;
+$$ LANGUAGE plpgsql;
+
 -- Function to get project summary
 CREATE OR REPLACE FUNCTION get_project_summary(project_uuid UUID)
 RETURNS TABLE (
@@ -387,20 +436,23 @@ RETURNS TABLE (
   total_projects BIGINT,
   active_projects BIGINT,
   overdue_income_count BIGINT,
-  overdue_expense_count BIGINT
+  overdue_expense_count BIGINT,
+  total_income DECIMAL
 ) AS $$
 BEGIN
   -- Set local search_path to public for security hardening
   SET LOCAL search_path = public;
   RETURN QUERY
   SELECT
-    COALESCE((SELECT SUM(amount) FROM income), 0) AS total_receivables,
+    COALESCE((SELECT SUM(contract_value) FROM projects), 0) - COALESCE((SELECT SUM(amount) FROM income), 0) AS total_receivables,
     COALESCE((SELECT SUM(amount - amount_paid) FROM expenses WHERE payment_status != 'paid'), 0) AS total_payables,
-    COALESCE((SELECT SUM(amount) FROM income), 0) - COALESCE((SELECT SUM(amount - amount_paid) FROM expenses WHERE payment_status != 'paid'), 0) AS net_position,
+    (COALESCE((SELECT SUM(contract_value) FROM projects), 0) - COALESCE((SELECT SUM(amount) FROM income), 0)) - 
+    COALESCE((SELECT SUM(amount - amount_paid) FROM expenses WHERE payment_status != 'paid'), 0) AS net_position,
     (SELECT COUNT(*) FROM projects) AS total_projects,
     (SELECT COUNT(*) FROM projects WHERE status = 'active') AS active_projects,
     (SELECT COUNT(*) FROM milestones WHERE status = 'billed' AND due_date < CURRENT_DATE) AS overdue_income_count,
-    (SELECT COUNT(*) FROM expenses WHERE payment_status = 'unpaid' AND expense_date < CURRENT_DATE - INTERVAL '30 days') AS overdue_expense_count;
+    (SELECT COUNT(*) FROM expenses WHERE payment_status = 'unpaid' AND expense_date < CURRENT_DATE - INTERVAL '30 days') AS overdue_expense_count,
+    COALESCE((SELECT SUM(amount) FROM income), 0) AS total_income;
 END;
 $$ LANGUAGE plpgsql;
 

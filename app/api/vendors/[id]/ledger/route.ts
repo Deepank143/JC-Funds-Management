@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
-import { getServerClient } from '@/lib/supabase';
+import { checkRole } from '@/lib/auth-utils';
 
 // GET /api/vendors/[id]/ledger - Get vendor ledger (expenses and running balance)
 export async function GET(
@@ -8,13 +8,13 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const supabase = getServerClient() as any;
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    // Ledger contains sensitive payment history - restrict to Owner and Accountant
+    const { error, supabase } = await checkRole(['owner', 'accountant']);
+    if (error) return error;
 
     const { id } = params;
 
-    const { data: expenses, error } = await supabase
+    const { data: expenses, error: fetchError } = await supabase
       .from('expenses')
       .select(`
         *,
@@ -24,7 +24,7 @@ export async function GET(
       .eq('vendor_id', id)
       .order('expense_date', { ascending: true });
 
-    if (error) throw error;
+    if (fetchError) throw fetchError;
 
     let runningBalance = 0;
     const ledger = (expenses || []).map((exp: any) => {
@@ -38,8 +38,8 @@ export async function GET(
       };
     });
 
-    const totalBilled = ledger.reduce((sum: number, exp: any) => sum + (exp.amount || 0), 0);
-    const totalPaid = ledger.reduce((sum: number, exp: any) => sum + (exp.amount_paid || 0), 0);
+    const totalBilled = (expenses || []).reduce((sum: number, exp: any) => sum + (exp.amount || 0), 0);
+    const totalPaid = (expenses || []).reduce((sum: number, exp: any) => sum + (exp.amount_paid || 0), 0);
 
     return NextResponse.json({
       ledger: ledger.reverse(), // most recent first for UI

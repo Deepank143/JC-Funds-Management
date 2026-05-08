@@ -1,13 +1,13 @@
 export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
-import { getServerClient } from '@/lib/supabase';
+import { checkOwner, checkRole } from '@/lib/auth-utils';
 
 // GET /api/income - List income with filters
 export async function GET(request: Request) {
   try {
-    const supabase = getServerClient() as any;
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    // Both owners and accountants can view income history
+    const { error, supabase } = await checkRole(['owner', 'accountant']);
+    if (error) return error;
 
     const { searchParams } = new URL(request.url);
     const projectId = searchParams.get('project_id');
@@ -26,9 +26,8 @@ export async function GET(request: Request) {
     if (projectId) query = query.eq('project_id', projectId);
     if (clientId) query = query.eq('client_id', clientId);
 
-    const { data, error } = await query;
-
-    if (error) throw error;
+    const { data, error: fetchError } = await query;
+    if (fetchError) throw fetchError;
 
     return NextResponse.json(data);
   } catch (error) {
@@ -43,13 +42,13 @@ export async function GET(request: Request) {
 // POST /api/income - Record new payment
 export async function POST(request: Request) {
   try {
-    const supabase = getServerClient() as any;
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    // ONLY Owners can record income (Money In is a sensitive operation)
+    const { error, supabase } = await checkOwner();
+    if (error) return error;
 
     const body = await request.json();
 
-    const { data, error } = await supabase
+    const { data, error: insertError } = await supabase
       .from('income')
       .insert({
         project_id: body.project_id,
@@ -64,7 +63,7 @@ export async function POST(request: Request) {
       .select()
       .single();
 
-    if (error) throw error;
+    if (insertError) throw insertError;
 
     // Update milestone status if milestone_id provided
     if (body.milestone_id) {
@@ -83,4 +82,3 @@ export async function POST(request: Request) {
     );
   }
 }
-

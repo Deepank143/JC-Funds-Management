@@ -11,7 +11,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { formatINR, formatDate, getProfitColor } from '@/lib/utils';
 import { useAdmin } from '@/contexts/AdminContext';
 import { 
-  ArrowLeft, Building2, MapPin, Calendar, IndianRupee,
+  ArrowLeft, Building2, MapPin, IndianRupee,
   TrendingUp, TrendingDown, Wallet, CheckCircle2, Clock, AlertCircle, EyeOff
 } from 'lucide-react';
 
@@ -127,7 +127,7 @@ export default function ProjectDetailPage() {
     color: category === 'Vendors' ? '#8b5cf6' : category === 'Raw Material' ? '#f59e0b' : '#10b981',
   }));
 
-  const profitColorClass = getProfitColor(summary.profit_margin);
+  const marginColor = getProfitColor(summary.profit_margin);
 
   return (
     <div className="space-y-6">
@@ -145,12 +145,15 @@ export default function ProjectDetailPage() {
               </Badge>
             </div>
             <div className="flex items-center gap-3 mt-1 text-sm text-muted-foreground">
-              <span>{project.clients?.name}</span>
+              <span className="flex items-center gap-1.5">
+                <Building2 className="h-3.5 w-3.5" />
+                {project.clients?.name}
+              </span>
               {project.location && (
                 <>
                   <span>•</span>
                   <span className="flex items-center gap-1">
-                    <MapPin className="h-3 w-3" />
+                    <MapPin className="h-3.5 w-3.5" />
                     {project.location}
                   </span>
                 </>
@@ -161,30 +164,49 @@ export default function ProjectDetailPage() {
       </div>
 
       {/* P&L Summary Cards */}
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <TrendingUp className="h-4 w-4 text-emerald-500" />
-              Total Income
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center justify-between">
+              <span className="flex items-center gap-2">
+                <TrendingUp className="h-4 w-4 text-emerald-500" />
+                Total Income
+              </span>
+              {!showSensitiveData && <EyeOff className="h-3 w-3" />}
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatINR(summary.total_income)}</div>
+            {showSensitiveData ? (
+              <div className="text-2xl font-bold">{formatINR(summary.total_income)}</div>
+            ) : (
+              <div className="text-2xl font-bold text-muted-foreground/30 select-none">••••••</div>
+            )}
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <TrendingDown className="h-4 w-4 text-red-500" />
-              Total Expenses
+            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center justify-between">
+              <span className="flex items-center gap-2">
+                <TrendingDown className="h-4 w-4 text-red-500" />
+                Total Expenses
+              </span>
+              {!showSensitiveData && <EyeOff className="h-3 w-3" />}
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatINR(summary.total_expenses)}</div>
-            <p className="text-xs text-muted-foreground">
-              {formatINR(summary.total_paid)} paid | {formatINR(summary.total_payable)} payable
-            </p>
+            {showSensitiveData ? (
+              <>
+                <div className="text-2xl font-bold">{formatINR(summary.total_expenses)}</div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {formatINR(summary.total_paid)} paid | {formatINR(summary.total_payable)} payable
+                </p>
+              </>
+            ) : (
+              <>
+                <div className="text-2xl font-bold text-muted-foreground/30 select-none">••••••</div>
+                <p className="text-xs text-muted-foreground mt-1">Hidden in Admin Mode</p>
+              </>
+            )}
           </CardContent>
         </Card>
         <Card>
@@ -194,7 +216,7 @@ export default function ProjectDetailPage() {
                 <Wallet className="h-4 w-4 text-blue-500" />
                 Project Profit
               </span>
-              {!showSensitiveData && <EyeOff className="h-4 w-4 text-muted-foreground" />}
+              {!showSensitiveData && <EyeOff className="h-3 w-3" />}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -203,14 +225,14 @@ export default function ProjectDetailPage() {
                 <div className={`text-2xl font-bold ${summary.profit >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
                   {formatINR(summary.profit)}
                 </div>
-                <p className="text-xs text-muted-foreground">
+                <Badge variant="outline" className={`${marginColor} border-0 mt-1`}>
                   {summary.profit_margin}% margin
-                </p>
+                </Badge>
               </>
             ) : (
               <>
-                <div className="text-2xl font-bold text-muted-foreground select-none">••••••</div>
-                <p className="text-xs text-muted-foreground">Hidden in Admin Mode</p>
+                <div className="text-2xl font-bold text-muted-foreground/30 select-none">••••••</div>
+                <p className="text-xs text-muted-foreground mt-1">Hidden in Admin Mode</p>
               </>
             )}
           </CardContent>
@@ -222,7 +244,7 @@ export default function ProjectDetailPage() {
                 <IndianRupee className="h-4 w-4 text-violet-500" />
                 Realized Profit
               </span>
-              {!showSensitiveData && <EyeOff className="h-4 w-4 text-muted-foreground" />}
+              {!showSensitiveData && <EyeOff className="h-3 w-3" />}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -231,14 +253,14 @@ export default function ProjectDetailPage() {
                 <div className={`text-2xl font-bold ${summary.realized_profit >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
                   {formatINR(summary.realized_profit)}
                 </div>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-muted-foreground mt-1">
                   Received minus paid expenses
                 </p>
               </>
             ) : (
               <>
-                <div className="text-2xl font-bold text-muted-foreground select-none">••••••</div>
-                <p className="text-xs text-muted-foreground">Hidden in Admin Mode</p>
+                <div className="text-2xl font-bold text-muted-foreground/30 select-none">••••••</div>
+                <p className="text-xs text-muted-foreground mt-1">Hidden in Admin Mode</p>
               </>
             )}
           </CardContent>
@@ -246,49 +268,57 @@ export default function ProjectDetailPage() {
       </div>
 
       {/* Chart + Breakdown */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* Chart */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Expense Breakdown</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {chartData.length > 0 ? (
-              <ProjectProfitChart data={chartData} />
-            ) : (
-              <div className="h-[300px] flex items-center justify-center text-muted-foreground">
-                No expenses recorded yet
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Category Details */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Category Details</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {Object.entries(pnl?.category_breakdown || {}).length === 0 ? (
-              <p className="text-muted-foreground text-center py-8">No expenses yet</p>
-            ) : (
-              Object.entries(pnl?.category_breakdown || {}).map(([category, data]: [string, any]) => (
-                <div key={category} className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <span className="font-medium">{category}</span>
-                    <span className="font-semibold">{formatINR(data.total)}</span>
-                  </div>
-                  <div className="flex justify-between text-sm text-muted-foreground">
-                    <span>Paid: {formatINR(data.paid)}</span>
-                    <span>Unpaid: {formatINR(data.unpaid)}</span>
-                  </div>
-                  <Separator />
+      {showSensitiveData ? (
+        <div className="grid gap-6 lg:grid-cols-2">
+          {/* Chart */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Expense Breakdown</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {chartData.length > 0 ? (
+                <ProjectProfitChart data={chartData} />
+              ) : (
+                <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+                  No expenses recorded yet
                 </div>
-              ))
-            )}
-          </CardContent>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Category Details */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Category Details</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {Object.entries(pnl?.category_breakdown || {}).length === 0 ? (
+                <p className="text-muted-foreground text-center py-8">No expenses yet</p>
+              ) : (
+                Object.entries(pnl?.category_breakdown || {}).map(([category, data]: [string, any]) => (
+                  <div key={category} className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="font-medium">{category}</span>
+                      <span className="font-semibold">{formatINR(data.total)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm text-muted-foreground">
+                      <span>Paid: {formatINR(data.paid)}</span>
+                      <span>Unpaid: {formatINR(data.unpaid)}</span>
+                    </div>
+                    <Separator />
+                  </div>
+                ))
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      ) : (
+        <Card className="p-12 text-center border-dashed">
+          <EyeOff className="h-10 w-10 mx-auto text-muted-foreground mb-4 opacity-20" />
+          <h3 className="text-lg font-medium text-muted-foreground">Financial Details Hidden</h3>
+          <p className="text-sm text-muted-foreground mt-1">Enable Admin Mode to view profit breakdown and charts.</p>
         </Card>
-      </div>
+      )}
 
       {/* Milestones */}
       <Card>
@@ -300,7 +330,7 @@ export default function ProjectDetailPage() {
             {project.milestones?.map((milestone) => (
               <div 
                 key={milestone.id}
-                className="flex items-center justify-between p-3 rounded-lg border"
+                className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-lg border gap-3"
               >
                 <div className="flex items-center gap-3">
                   {milestone.status === 'paid' ? (
@@ -312,17 +342,17 @@ export default function ProjectDetailPage() {
                   )}
                   <div>
                     <p className="font-medium">{milestone.name}</p>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-xs text-muted-foreground">
                       {milestone.percentage}% • Due: {milestone.due_date ? formatDate(milestone.due_date) : 'Not set'}
                     </p>
                   </div>
                 </div>
-                <div className="text-right">
+                <div className="flex items-center justify-between sm:text-right sm:flex-col sm:items-end gap-2 border-t sm:border-0 pt-2 sm:pt-0">
                   <p className="font-semibold">{formatINR(milestone.amount)}</p>
                   <Badge variant={
                     milestone.status === 'paid' ? 'default' : 
                     milestone.status === 'billed' ? 'secondary' : 'outline'
-                  }>
+                  } className="text-[10px] h-5">
                     {milestone.status}
                   </Badge>
                 </div>
@@ -341,24 +371,31 @@ export default function ProjectDetailPage() {
           {pnl?.income && pnl.income.length > 0 ? (
             <div className="space-y-3">
               {pnl.income.map((payment, index) => (
-                <div key={index} className="flex items-center justify-between p-3 rounded-lg border">
-                  <div>
-                    <p className="font-medium">
-                      {payment.milestones?.name || 'Payment'}
-                      {payment.milestones?.percentage && (
-                        <span className="text-sm text-muted-foreground ml-2">
-                          ({payment.milestones.percentage}%)
-                        </span>
-                      )}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {formatDate(payment.payment_date)} • {payment.payment_mode}
-                    </p>
+                <div key={index} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-lg border gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="h-8 w-8 rounded-full bg-emerald-50 flex items-center justify-center">
+                      <TrendingUp className="h-4 w-4 text-emerald-600" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-sm">
+                        {payment.milestones?.name || 'Payment'}
+                        {payment.milestones?.percentage && (
+                          <span className="text-xs text-muted-foreground ml-2">
+                            ({payment.milestones.percentage}%)
+                          </span>
+                        )}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {formatDate(payment.payment_date)} • {payment.payment_mode.replace('_', ' ')}
+                      </p>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="font-semibold text-emerald-600">{formatINR(payment.amount)}</p>
+                  <div className="flex items-center justify-between sm:text-right sm:flex-col sm:items-end gap-1 border-t sm:border-0 pt-2 sm:pt-0">
+                    <p className="font-bold text-emerald-600">{formatINR(payment.amount)}</p>
                     {payment.reference_number && (
-                      <p className="text-xs text-muted-foreground">Ref: {payment.reference_number}</p>
+                      <p className="text-[10px] text-muted-foreground font-mono bg-muted px-1 rounded">
+                        Ref: {payment.reference_number}
+                      </p>
                     )}
                   </div>
                 </div>

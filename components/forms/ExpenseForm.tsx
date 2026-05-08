@@ -20,6 +20,7 @@ import {
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { toast } from '@/hooks/use-toast';
 import { Plus, UploadCloud, Loader2 } from 'lucide-react';
+import { useAdmin } from '@/contexts/AdminContext';
 
 const expenseSchema = z.object({
   project_id: z.string().uuid('Please select a project'),
@@ -50,6 +51,8 @@ export function ExpenseForm() {
   const queryClient = useQueryClient();
   const supabase = createClientComponentClient();
 
+  const { isAdminMode, canManageFunds } = useAdmin();
+
   const { register, handleSubmit, watch, setValue, formState: { errors }, reset } = useForm<ExpenseFormData>({
     resolver: zodResolver(expenseSchema),
     defaultValues: {
@@ -59,6 +62,7 @@ export function ExpenseForm() {
   });
 
   const selectedCategory = watch('category_id');
+  const currentStatus = watch('payment_status');
 
   const { data: projects } = useQuery<Project[]>({
     queryKey: ['projects'],
@@ -86,6 +90,11 @@ export function ExpenseForm() {
 
   const mutation = useMutation({
     mutationFn: async (data: ExpenseFormData & { receipt_url?: string }) => {
+      // Safety check: if user tries to submit 'paid' without permission
+      if (!canManageFunds && data.payment_status !== 'unpaid') {
+        throw new Error('Unauthorized: Only Admin can authorize payments.');
+      }
+
       const res = await fetch('/api/expenses', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -108,10 +117,10 @@ export function ExpenseForm() {
       setFile(null);
       setOpen(false);
     },
-    onError: () => {
+    onError: (error: any) => {
       toast({
         title: 'Error',
-        description: 'Failed to record expense. Please try again.',
+        description: error.message || 'Failed to record expense. Please try again.',
         variant: 'destructive',
       });
     },
@@ -279,18 +288,30 @@ export function ExpenseForm() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="payment_status">Payment Status *</Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="payment_status">Payment Status *</Label>
+              {!canManageFunds && (
+                <span className="text-[10px] bg-amber-50 text-amber-600 px-1.5 py-0.5 rounded border border-amber-100 font-medium">
+                  Admin Only
+                </span>
+              )}
+            </div>
             <Select 
               onValueChange={(value: 'paid' | 'unpaid' | 'partial') => setValue('payment_status', value)}
-              defaultValue="unpaid"
+              value={watch('payment_status')}
+              disabled={!canManageFunds}
             >
-              <SelectTrigger>
+              <SelectTrigger className={!canManageFunds ? "bg-muted" : ""}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="paid">Paid</SelectItem>
-                <SelectItem value="unpaid">Unpaid</SelectItem>
-                <SelectItem value="partial">Partial</SelectItem>
+                <SelectItem value="unpaid">Unpaid (Entry Only)</SelectItem>
+                <SelectItem value="paid" disabled={!canManageFunds}>
+                  Paid (Authorize Fund Release)
+                </SelectItem>
+                <SelectItem value="partial" disabled={!canManageFunds}>
+                  Partial Payment
+                </SelectItem>
               </SelectContent>
             </Select>
           </div>

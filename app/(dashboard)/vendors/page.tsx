@@ -11,9 +11,11 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Loader2, ArrowRight } from 'lucide-react';
+import { Loader2, ArrowRight, User, Phone, Tag } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 
 export default function VendorsPage() {
   const { canWrite } = useAdmin();
@@ -28,15 +30,59 @@ export default function VendorsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Vendors & Labour</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Vendors & Labour</h1>
           <p className="text-muted-foreground">Manage suppliers and contractors.</p>
         </div>
         {canWrite && <VendorForm />}
       </div>
 
-      <div className="rounded-md border bg-card">
+      {/* Mobile View: Cards */}
+      <div className="grid gap-4 md:hidden">
+        {isLoading ? (
+          <div className="flex justify-center p-8">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          </div>
+        ) : !vendors?.length ? (
+          <p className="text-center py-8 text-muted-foreground">No vendors found.</p>
+        ) : (
+          vendors.map((vendor: any) => (
+            <Card key={vendor.id} className="overflow-hidden">
+              <CardContent className="p-4 space-y-3">
+                <div className="flex justify-between items-start">
+                  <div className="font-bold text-lg">{vendor.name}</div>
+                  <Badge variant="outline" className="capitalize bg-blue-50 text-blue-700 border-blue-200">
+                    {vendor.type}
+                  </Badge>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 text-sm text-muted-foreground">
+                  <div className="flex items-center gap-1.5">
+                    <User className="h-3.5 w-3.5" />
+                    <span className="truncate">{vendor.contact_person || 'N/A'}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <Phone className="h-3.5 w-3.5" />
+                    <span>{vendor.phone || 'N/A'}</span>
+                  </div>
+                </div>
+
+                <div className="pt-2 border-t">
+                  <Button variant="ghost" size="sm" className="w-full justify-between text-blue-600 font-semibold" asChild>
+                    <Link href={`/vendors/${vendor.id}`}>
+                      View Ledger <ArrowRight className="h-4 w-4" />
+                    </Link>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))
+        )}
+      </div>
+
+      {/* Desktop View: Table */}
+      <div className="hidden md:block rounded-md border bg-card overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow>

@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
-import { getServerClient } from '@/lib/supabase';
+import { checkOwner } from '@/lib/auth-utils';
 
 // GET /api/projects/[id]/pnl - Project Profit & Loss
 export async function GET(
@@ -8,13 +8,12 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const supabase = getServerClient();
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     const { id } = params;
+    const { error, supabase } = await checkOwner();
+    if (error) return error;
 
     // Use the database function for summary
-    const { data: summary, error: summaryError } = await (supabase.rpc as any)('get_project_summary', { project_uuid: id });
+    const { data: summary, error: summaryError } = await (supabase as any).rpc('get_project_summary', { project_uuid: id });
 
     if (summaryError) throw summaryError;
 

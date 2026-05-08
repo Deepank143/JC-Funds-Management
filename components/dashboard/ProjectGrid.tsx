@@ -7,16 +7,20 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { formatINR, getProfitColor } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useAdmin } from '@/contexts/AdminContext';
 import { ArrowUpRight, ArrowDownRight, Minus } from 'lucide-react';
 
 interface Project {
   id: string;
   name: string;
+  client_name: string | null;
   location: string | null;
-  contract_value: number;
   status: string;
-  clients: { name: string } | null;
-  milestones: Array<{ id: string; status: string; amount: number }>;
+  contract_value: number;
+  total_income: number;
+  total_expenses: number;
+  profit: number;
+  profit_margin: number;
 }
 
 async function fetchProjects(): Promise<Project[]> {
@@ -31,6 +35,8 @@ export function ProjectGrid() {
     queryKey: ['active-projects'],
     queryFn: fetchProjects,
   });
+
+  const { isAdminMode } = useAdmin();
 
   if (isLoading) {
     return (
@@ -65,14 +71,12 @@ export function ProjectGrid() {
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
       {projects.map((project) => {
-        // Calculate received amount from milestones
-        const receivedAmount = project.milestones
-          ?.filter(m => m.status === 'paid')
-          .reduce((sum, m) => sum + (m.amount || 0), 0) || 0;
-
+        const receivedAmount = project.total_income || 0;
         const progress = project.contract_value > 0 
           ? (receivedAmount / project.contract_value) * 100 
           : 0;
+
+        const marginColor = getProfitColor(project.profit_margin);
 
         return (
           <Card 
@@ -85,7 +89,7 @@ export function ProjectGrid() {
                 <div>
                   <CardTitle className="text-lg">{project.name}</CardTitle>
                   <p className="text-sm text-muted-foreground mt-1">
-                    {project.clients?.name}
+                    {project.client_name}
                   </p>
                 </div>
                 <Badge variant={project.status === 'active' ? 'default' : 'secondary'}>
@@ -94,10 +98,27 @@ export function ProjectGrid() {
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Contract Value */}
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-muted-foreground">Contract Value</span>
-                <span className="font-semibold">{formatINR(project.contract_value)}</span>
+              {/* Contract Value & Margin */}
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-muted-foreground">Contract Value</span>
+                  <span className="font-semibold">
+                    {!isAdminMode ? (
+                      <span className="text-muted-foreground/30 font-mono tracking-tighter">••••••</span>
+                    ) : (
+                      formatINR(project.contract_value)
+                    )}
+                  </span>
+                </div>
+                
+                {isAdminMode && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Profit Margin</span>
+                    <Badge className={`${marginColor} border-0`}>
+                      {project.profit_margin}%
+                    </Badge>
+                  </div>
+                )}
               </div>
 
               {/* Received vs Pending */}
@@ -105,23 +126,32 @@ export function ProjectGrid() {
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Received</span>
                   <span className="font-medium text-emerald-600">
-                    {formatINR(receivedAmount)}
+                    {!isAdminMode ? (
+                      <span className="text-muted-foreground/30 font-mono tracking-tighter">••••••</span>
+                    ) : (
+                      formatINR(receivedAmount)
+                    )}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Pending</span>
                   <span className="font-medium text-amber-600">
-                    {formatINR(project.contract_value - receivedAmount)}
+                    {!isAdminMode ? (
+                      <span className="text-muted-foreground/30 font-mono tracking-tighter">••••••</span>
+                    ) : (
+                      formatINR(project.contract_value - receivedAmount)
+                    )}
                   </span>
                 </div>
-                <Progress value={progress} className="h-2" />
+                {isAdminMode && <Progress value={progress} className="h-2" />}
               </div>
 
               {/* Location */}
               {project.location && (
-                <p className="text-xs text-muted-foreground">
-                  📍 {project.location}
-                </p>
+                <div className="pt-2 border-t flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <ArrowUpRight className="h-3 w-3" />
+                  <span>{project.location}</span>
+                </div>
               )}
             </CardContent>
           </Card>

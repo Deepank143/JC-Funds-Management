@@ -13,28 +13,39 @@ export async function GET(request: Request) {
     const status = searchParams.get('status');
     const clientId = searchParams.get('client_id');
 
-    let query = supabase
-      .from('projects')
-      .select(`
-        *,
-        clients(name),
-        milestones(id, name, status, amount)
-      `)
-      .order('created_at', { ascending: false });
+    // Use RPC if we want margins (for dashboard/grid)
+    const { data: projectsWithMargins, error: rpcError } = await supabase.rpc('get_projects_with_margins');
+    
+    if (rpcError) {
+      console.warn('RPC margin fetch failed, falling back to basic query:', rpcError);
+      // Fallback to basic query if RPC fails (e.g. migration not applied yet)
+      let query = supabase
+        .from('projects')
+        .select(`
+          *,
+          clients(name),
+          milestones(id, name, status, amount)
+        `)
+        .order('created_at', { ascending: false });
 
-    if (status) {
-      query = query.eq('status', status);
+      if (status) query = query.eq('status', status);
+      if (clientId) query = query.eq('client_id', clientId);
+
+      const { data, error } = await query;
+      if (error) throw error;
+      return NextResponse.json(data);
     }
 
+    // Filter RPC results if needed
+    let filtered = projectsWithMargins;
+    if (status && status !== 'all') {
+      filtered = filtered.filter((p: any) => p.status === status);
+    }
     if (clientId) {
-      query = query.eq('client_id', clientId);
+      filtered = filtered.filter((p: any) => p.client_id === clientId);
     }
 
-    const { data, error } = await query;
-
-    if (error) throw error;
-
-    return NextResponse.json(data);
+    return NextResponse.json(filtered);
   } catch (error) {
     console.error('Projects fetch error:', error);
     return NextResponse.json(
@@ -97,4 +108,3 @@ export async function POST(request: Request) {
     );
   }
 }
-

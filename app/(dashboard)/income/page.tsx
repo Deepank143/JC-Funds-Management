@@ -13,8 +13,9 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { format } from 'date-fns';
-import { Loader2 } from 'lucide-react';
+import { Loader2, TrendingUp, Building, CreditCard } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
 
 export default function IncomePage() {
   const { canWrite } = useAdmin();
@@ -29,15 +30,75 @@ export default function IncomePage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Income</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Income</h1>
           <p className="text-muted-foreground">Manage client payments and receipts.</p>
         </div>
         {canWrite && <IncomeForm />}
       </div>
 
-      <div className="rounded-md border bg-card">
+      {/* Mobile View: Cards */}
+      <div className="grid gap-4 md:hidden">
+        {isLoading ? (
+          <div className="flex justify-center p-8">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          </div>
+        ) : !income?.length ? (
+          <p className="text-center py-8 text-muted-foreground">No records found.</p>
+        ) : (
+          income.map((record: any) => (
+            <Card key={record.id} className="overflow-hidden border-l-4 border-l-emerald-500">
+              <CardContent className="p-4 space-y-3">
+                <div className="flex justify-between items-start">
+                  <div className="space-y-1">
+                    <p className="text-xs font-medium text-muted-foreground uppercase">
+                      {format(new Date(record.payment_date), 'dd MMM yyyy')}
+                    </p>
+                    <div className="font-bold text-lg text-emerald-700">
+                      ₹{record.amount?.toLocaleString()}
+                    </div>
+                  </div>
+                  <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200">
+                    Received
+                  </Badge>
+                </div>
+
+                <div className="space-y-2 pt-2 border-t text-sm">
+                  <div className="flex items-center gap-2">
+                    <Building className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span className="font-medium">{record.clients?.name}</span>
+                    <span className="text-muted-foreground">•</span>
+                    <span className="text-muted-foreground">{record.projects?.name}</span>
+                  </div>
+                  
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <CreditCard className="h-3.5 w-3.5" />
+                    <span className="capitalize">{record.payment_mode.replace('_', ' ')}</span>
+                    {record.reference_number && (
+                      <span className="text-xs font-mono bg-muted px-1.5 py-0.5 rounded">
+                        {record.reference_number}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {record.milestones && (
+                  <div className="pt-2 flex items-center gap-2">
+                    <TrendingUp className="h-3.5 w-3.5 text-blue-500" />
+                    <span className="text-xs font-medium text-blue-600">
+                      Milestone: {record.milestones.name}
+                    </span>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          ))
+        )}
+      </div>
+
+      {/* Desktop View: Table */}
+      <div className="hidden md:block rounded-md border bg-card overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>

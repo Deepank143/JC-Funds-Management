@@ -6,10 +6,11 @@ import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { toast } from '@/hooks/use-toast';
-import { Building2, Loader2, Mail } from 'lucide-react';
+import { Building2, Loader2, Mail, ShieldCheck, LogIn, UserPlus } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -17,31 +18,62 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
 
-  const handleEmailLogin = async (e: React.FormEvent) => {
+  const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) throw error;
-
-      if (data.session) {
-        toast({
-          title: 'Welcome back!',
-          description: 'Redirecting to dashboard...',
+      if (authMode === 'login') {
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
         });
-        router.push('/');
-        router.refresh();
+
+        if (error) throw error;
+
+        if (data.session) {
+          toast({
+            title: 'Welcome back!',
+            description: 'Redirecting to dashboard...',
+          });
+          router.push('/');
+          router.refresh();
+        }
+      } else {
+        // Signup logic - triggers email verification/OTP
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/api/auth/callback`,
+            data: {
+              full_name: email.split('@')[0], // Default name
+            }
+          }
+        });
+
+        if (error) throw error;
+
+        if (data.user && data.session) {
+          toast({
+            title: 'Account created!',
+            description: 'You are now signed in.',
+          });
+          router.push('/');
+          router.refresh();
+        } else if (data.user) {
+          toast({
+            title: 'Verification email sent!',
+            description: 'Please check your email to verify your account.',
+          });
+        }
       }
     } catch (error: any) {
       toast({
-        title: 'Login failed',
-        description: error.message || 'Invalid email or password',
+        title: authMode === 'login' ? 'Login failed' : 'Signup failed',
+        description: error.message || 'An error occurred during authentication.',
         variant: 'destructive',
       });
     } finally {
@@ -69,7 +101,7 @@ export default function LoginPage() {
   };
 
   return (
-    <Card className="w-full">
+    <Card className="w-full max-w-md mx-auto">
       <CardHeader className="space-y-1 text-center">
         <div className="flex justify-center mb-4">
           <div className="bg-primary/10 p-3 rounded-full">
@@ -81,41 +113,65 @@ export default function LoginPage() {
           Funds Management System
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <form onSubmit={handleEmailLogin} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              placeholder="harsh@jaaniconstructions.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
-            <Input
-              id="password"
-              type="password"
-              placeholder="Enter your password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-          </div>
-          <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Signing in...
-              </>
-            ) : (
-              'Sign In'
+      
+      <CardContent className="space-y-6">
+        <Tabs defaultValue="login" className="w-full" onValueChange={(v) => setAuthMode(v as any)}>
+          <TabsList className="grid w-full grid-cols-2 mb-4">
+            <TabsTrigger value="login" className="gap-2">
+              <LogIn className="h-4 w-4" />
+              Sign In
+            </TabsTrigger>
+            <TabsTrigger value="signup" className="gap-2">
+              <UserPlus className="h-4 w-4" />
+              Create Account
+            </TabsTrigger>
+          </TabsList>
+          
+          <form onSubmit={handleEmailAuth} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email Address</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="harsh@jaaniconstructions.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className="bg-muted/50"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                className="bg-muted/50"
+              />
+            </div>
+            
+            {authMode === 'signup' && (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground bg-blue-50/50 p-2 rounded-md border border-blue-100">
+                <ShieldCheck className="h-4 w-4 text-blue-600 shrink-0" />
+                <span>Verification OTP will be sent to your email after registration.</span>
+              </div>
             )}
-          </Button>
-        </form>
+
+            <Button type="submit" className="w-full py-6 text-lg font-semibold" disabled={loading}>
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                  Please wait...
+                </>
+              ) : (
+                authMode === 'login' ? 'Sign In' : 'Sign Up'
+              )}
+            </Button>
+          </form>
+        </Tabs>
 
         <div className="relative">
           <div className="absolute inset-0 flex items-center">
@@ -130,16 +186,22 @@ export default function LoginPage() {
 
         <Button
           variant="outline"
-          className="w-full"
+          className="w-full py-6 gap-3"
           onClick={handleGoogleLogin}
           disabled={loading}
         >
-          <svg viewBox="0 0 24 24" className="mr-2 h-4 w-4" aria-hidden="true">
+          <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
             <path d="M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 0 .307 5.387.307 12s5.56 12 12.173 12c3.573 0 6.267-1.173 8.373-3.36 2.16-2.16 2.84-5.213 2.84-7.667 0-.76-.053-1.467-.173-2.053H12.48z" fill="currentColor" />
           </svg>
-          Google
+          Continue with Google
         </Button>
       </CardContent>
+      
+      <CardFooter className="flex justify-center border-t py-4 bg-muted/20 rounded-b-lg">
+        <p className="text-xs text-muted-foreground text-center">
+          By continuing, you agree to the Jaani Constructions Terms of Service and Privacy Policy.
+        </p>
+      </CardFooter>
     </Card>
   );
 }

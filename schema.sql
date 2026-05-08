@@ -12,7 +12,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE TABLE profiles (
   id UUID REFERENCES auth.users ON DELETE CASCADE PRIMARY KEY,
   full_name TEXT,
-  role TEXT CHECK (role IN ('owner', 'accountant', 'viewer')) DEFAULT 'owner',
+  role TEXT CHECK (role IN ('owner', 'accountant', 'viewer')) DEFAULT 'viewer',
   phone TEXT,
   avatar_url TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -507,9 +507,34 @@ CREATE TRIGGER update_vendors_updated_at BEFORE UPDATE ON vendors
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- ============================================================
+-- AUTH TRIGGERS
+-- ============================================================
+
+-- Function to handle new user creation in profiles
+CREATE OR REPLACE FUNCTION handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO public.profiles (id, full_name, role)
+  VALUES (
+    NEW.id, 
+    COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.email),
+    'viewer'
+  );
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Trigger to create profile on signup
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION handle_new_user();
+
+-- ============================================================
 -- STORAGE BUCKET SETUP (Run in Supabase Dashboard or via API)
 -- ============================================================
 -- Create bucket: bill-photos
 -- Set public: true
 -- Set file size limit: 5MB
+-- Allowed mime types: image/*
 -- Allowed mime types: image/*

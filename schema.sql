@@ -289,6 +289,51 @@ CREATE POLICY "Vendors modifiable by owner and accountant" ON vendors
     EXISTS (SELECT 1 FROM profiles WHERE profiles.id = auth.uid() AND profiles.role IN ('owner', 'accountant'))
   );
 
+-- Expense Categories: Viewable by all authenticated, modifiable by owner/accountant
+CREATE POLICY "Expense categories viewable by all authenticated" ON expense_categories
+  FOR SELECT USING (auth.role() = 'authenticated');
+
+CREATE POLICY "Expense categories modifiable by owner and accountant" ON expense_categories
+  FOR ALL USING (
+    EXISTS (SELECT 1 FROM profiles WHERE profiles.id = auth.uid() AND profiles.role IN ('owner', 'accountant'))
+  );
+
+-- Expense Subcategories: Viewable by all authenticated, modifiable by owner/accountant
+CREATE POLICY "Expense subcategories viewable by all authenticated" ON expense_subcategories
+  FOR SELECT USING (auth.role() = 'authenticated');
+
+CREATE POLICY "Expense subcategories modifiable by owner and accountant" ON expense_subcategories
+  FOR ALL USING (
+    EXISTS (SELECT 1 FROM profiles WHERE profiles.id = auth.uid() AND profiles.role IN ('owner', 'accountant'))
+  );
+
+-- Milestones: Viewable by all authenticated, modifiable by owner/accountant
+CREATE POLICY "Milestones viewable by all authenticated" ON milestones
+  FOR SELECT USING (auth.role() = 'authenticated');
+
+CREATE POLICY "Milestones modifiable by owner and accountant" ON milestones
+  FOR ALL USING (
+    EXISTS (SELECT 1 FROM profiles WHERE profiles.id = auth.uid() AND profiles.role IN ('owner', 'accountant'))
+  );
+
+-- Labour Attendance: Viewable by all authenticated, modifiable by owner/accountant
+CREATE POLICY "Labour attendance viewable by all authenticated" ON labour_attendance
+  FOR SELECT USING (auth.role() = 'authenticated');
+
+CREATE POLICY "Labour attendance modifiable by owner and accountant" ON labour_attendance
+  FOR ALL USING (
+    EXISTS (SELECT 1 FROM profiles WHERE profiles.id = auth.uid() AND profiles.role IN ('owner', 'accountant'))
+  );
+
+-- Project Budgets: Viewable by all authenticated, modifiable by owner/accountant
+CREATE POLICY "Project budgets viewable by all authenticated" ON project_budgets
+  FOR SELECT USING (auth.role() = 'authenticated');
+
+CREATE POLICY "Project budgets modifiable by owner and accountant" ON project_budgets
+  FOR ALL USING (
+    EXISTS (SELECT 1 FROM profiles WHERE profiles.id = auth.uid() AND profiles.role IN ('owner', 'accountant'))
+  );
+
 -- ============================================================
 -- FUNCTIONS
 -- ============================================================
@@ -305,6 +350,8 @@ RETURNS TABLE (
   realized_profit DECIMAL
 ) AS $$
 BEGIN
+  -- Set local search_path to public for security hardening
+  SET LOCAL search_path = public;
   RETURN QUERY
   SELECT
     COALESCE((SELECT SUM(amount) FROM income WHERE project_id = project_uuid), 0) AS total_income,
@@ -343,6 +390,8 @@ RETURNS TABLE (
   overdue_expense_count BIGINT
 ) AS $$
 BEGIN
+  -- Set local search_path to public for security hardening
+  SET LOCAL search_path = public;
   RETURN QUERY
   SELECT
     COALESCE((SELECT SUM(amount) FROM income), 0) AS total_receivables,
@@ -362,6 +411,8 @@ RETURNS TABLE (
   amount DECIMAL
 ) AS $$
 BEGIN
+  -- Set local search_path to public for security hardening
+  SET LOCAL search_path = public;
   RETURN QUERY
   SELECT 
     CASE
@@ -384,6 +435,8 @@ $$ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
+  -- Set local search_path to public for security hardening
+  SET LOCAL search_path = public;
   NEW.updated_at = NOW();
   RETURN NEW;
 END;

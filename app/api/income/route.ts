@@ -43,7 +43,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     // ONLY Owners can record income (Money In is a sensitive operation)
-    const { error, supabase } = await checkOwner();
+    const { error, supabase, session } = await checkOwner();
     if (error) return error;
 
     const body = await request.json();
@@ -59,6 +59,7 @@ export async function POST(request: Request) {
         payment_mode: body.payment_mode || 'bank_transfer',
         reference_number: body.reference_number,
         notes: body.notes,
+        created_by: session.user.id,
       } as any)
       .select()
       .single();

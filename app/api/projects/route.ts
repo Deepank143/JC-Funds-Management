@@ -75,6 +75,7 @@ export async function POST(request: Request) {
         start_date: body.start_date,
         expected_end_date: body.expected_end_date,
         status: 'active',
+        created_by: session.user.id,
       } as any)
       .select()
       .single();

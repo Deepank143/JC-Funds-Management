@@ -65,6 +65,7 @@ export async function POST(request: Request) {
         address: body.address,
         gstin: body.gstin,
         notes: body.notes,
+        created_by: session.user.id,
       } as any)
       .select()
       .single();
@@ -80,4 +81,3 @@ export async function POST(request: Request) {
     );
   }
 }
-

@@ -66,6 +66,7 @@ export async function POST(request: Request) {
         payment_mode: body.payment_mode,
         reference_number: body.reference_number,
         notes: body.notes,
+        created_by: session.user.id,
       } as any)
       .select()
       .single();
@@ -81,6 +82,3 @@ export async function POST(request: Request) {
     );
   }
 }
-
-
-

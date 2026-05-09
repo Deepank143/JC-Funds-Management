@@ -52,6 +52,7 @@ export async function POST(request: Request) {
         category_id: body.category_id,
         subcategory_id: body.subcategory_id,
         notes: body.notes,
+        created_by: session.user.id,
       } as any)
       .select()
       .single();
@@ -67,4 +68,3 @@ export async function POST(request: Request) {
     );
   }
 }
-

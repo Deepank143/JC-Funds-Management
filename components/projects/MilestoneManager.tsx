@@ -80,6 +80,8 @@ export function MilestoneManager({ projectId, contractValue, existingMilestones 
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['project', projectId] });
+      queryClient.invalidateQueries({ queryKey: ['project-pnl', projectId] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-kpis'] });
       toast({ title: 'Schedule Updated', description: 'Payment milestones saved successfully.' });
       setOpen(false);
     },

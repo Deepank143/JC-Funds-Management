@@ -89,6 +89,8 @@ export function IncomeForm() {
       queryClient.invalidateQueries({ queryKey: ['income'] });
       queryClient.invalidateQueries({ queryKey: ['milestones'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard-kpis'] });
+      queryClient.invalidateQueries({ queryKey: ['project'] });
+      queryClient.invalidateQueries({ queryKey: ['project-pnl'] });
       toast({
         title: 'Income recorded',
         description: 'The payment has been successfully recorded.',

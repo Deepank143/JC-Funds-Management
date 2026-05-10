@@ -39,8 +39,8 @@ export default function LoginPage() {
             title: 'Welcome back!',
             description: 'Redirecting to dashboard...',
           });
-          router.push('/');
-          router.refresh();
+          // Use window.location for a full refresh to ensure the session cookie is correctly picked up by middleware
+          window.location.href = '/';
         }
       } else {
         // Signup logic - triggers email verification/OTP
@@ -62,8 +62,7 @@ export default function LoginPage() {
             title: 'Account created!',
             description: 'You are now signed in.',
           });
-          router.push('/');
-          router.refresh();
+          window.location.href = '/';
         } else if (data.user) {
           toast({
             title: 'Verification email sent!',
@@ -163,7 +162,7 @@ export default function LoginPage() {
             {authMode === 'signup' && (
               <div className="flex items-center gap-2 text-xs text-muted-foreground bg-blue-50/50 p-2 rounded-md border border-blue-100">
                 <ShieldCheck className="h-4 w-4 text-blue-600 shrink-0" />
-                <span>Verification OTP will be sent to your email after registration.</span>
+                <span>Verification link will be sent to your email after registration.</span>
               </div>
             )}
 

@@ -122,6 +122,8 @@ export function ExpenseForm() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['expenses'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard-kpis'] });
+      queryClient.invalidateQueries({ queryKey: ['project'] });
+      queryClient.invalidateQueries({ queryKey: ['project-pnl'] });
       toast({
         title: 'Expense recorded',
         description: 'The expense has been successfully added.',

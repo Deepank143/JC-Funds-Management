@@ -47,8 +47,7 @@ export function Header({ onMenuClick }: HeaderProps) {
         title: 'Signed out',
         description: 'You have been successfully signed out.',
       });
-      router.push('/login');
-      router.refresh();
+      window.location.href = '/login';
     } catch (error) {
       toast({
         title: 'Error',

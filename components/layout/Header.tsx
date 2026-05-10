@@ -88,9 +88,11 @@ export function Header({ onMenuClick }: HeaderProps) {
             <Image 
               src="/logo.png" 
               alt="Apex Buildcon Logo" 
-              width={40} 
-              height={40} 
-              className="h-10 w-auto" 
+              width={120} 
+              height={120} 
+              className="h-12 w-auto object-contain" 
+              priority
+              quality={100}
             />
             <div className="hidden sm:block">
               <h1 className="text-lg font-semibold leading-none">Apex Buildcon</h1>

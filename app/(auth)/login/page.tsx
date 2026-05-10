@@ -108,10 +108,11 @@ export default function LoginPage() {
           <Image 
             src="/logo.png" 
             alt="Apex Buildcon Logo" 
-            width={80} 
-            height={80} 
-            className="h-20 w-auto" 
+            width={240} 
+            height={240} 
+            className="h-28 w-auto object-contain mx-auto" 
             priority
+            quality={100}
           />
         </div>
         <CardTitle className="text-2xl font-bold">Apex Buildcon</CardTitle>

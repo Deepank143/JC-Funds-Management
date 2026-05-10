@@ -1,4 +1,4 @@
-# 🏗️ Sprint Plan — Jaani Constructions Funds Management System
+# 🏗️ Sprint Plan — Apex Buildcon Funds Management System
 **Freelancer POV | Client: Harsh Jani | Last Updated: May 6, 2026**
 *Architecture: Hybrid Maker-Checker (Admin Mode + Staff Data Entry)*
 
@@ -297,5 +297,5 @@ Week 4  → Sprint 4: Reports + Alerts + Polish + Production Hardening
 
 ---
 
-*Prepared by: Freelance Developer | For: Harsh Jani, Jaani Constructions*
+*Prepared by: Freelance Developer | For: Harsh Jani, Apex Buildcon*
 *Last Updated: May 6, 2026*

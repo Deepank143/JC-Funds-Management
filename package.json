@@ -1,7 +1,7 @@
 {
-  "name": "jaani-funds",
+  "name": "apex-buildcon-funds",
   "version": "1.0.0",
-  "description": "Funds Management System for Jaani Constructions",
+  "description": "Funds Management System for Apex Buildcon",
   "private": true,
   "scripts": {
     "dev": "next dev",

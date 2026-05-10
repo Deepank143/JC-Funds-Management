@@ -2,7 +2,7 @@
 
 ## Profile Overview
 * **Name**: Harsh Jani
-* **Role**: Founder & Managing Director, Jaani Constructions
+* **Role**: Founder & Managing Director, Apex Buildcon
 * **Industry**: Construction & Real Estate Development
 * **Location**: Gujarat, India
 * **Company Size**: Mid-sized

@@ -1,5 +1,5 @@
 -- ============================================================
--- Jaani Constructions - Funds Management System
+-- Apex Buildcon - Funds Management System
 -- Supabase PostgreSQL Schema
 -- ============================================================
 

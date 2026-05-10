@@ -1,10 +1,10 @@
 # Product Requirements Document (PRD)
 
-## Jaani Constructions — Funds Management System
+## Apex Buildcon — Funds Management System
 
 **Version:** 1.0  
 **Date:** May 2026  
-**Prepared for:** Harsh Jani, Owner — Jaani Constructions  
+**Prepared for:** Harsh Jani, Owner — Apex Buildcon  
 **Tech Stack:** React (Next.js) · Node.js · Python · Supabase · Vercel  
 **Author:** Freelance Developer
 
@@ -516,7 +516,7 @@ $$ language plpgsql;
 
 ```
 ┌─────────────────────────────────────────────┐
-│  Jaani Constructions     [+] Add Expense    │
+│  Apex Buildcon     [+] Add Expense    │
 │  Funds Management        [👤 Harsh Jani ▼]  │
 ├──────────┬──────────────────────────────────┤
 │          │  [Total Rec] [Total Pay] [Net]   │
@@ -760,8 +760,8 @@ async def generate_pnl(project_id: str):
 
 | Term | Definition |
 |------|------------|
-| **Receivables** | Money owed to Jaani Constructions by clients |
-| **Payables** | Money Jaani Constructions owes to vendors/labour |
+| **Receivables** | Money owed to Apex Buildcon by clients |
+| **Payables** | Money Apex Buildcon owes to vendors/labour |
 | **Net Position** | Receivables minus Payables — working capital snapshot |
 | **Milestone** | Pre-defined project stage triggering a client payment |
 | **TMT Steel** | Thermo-Mechanically Treated steel bars used in construction |

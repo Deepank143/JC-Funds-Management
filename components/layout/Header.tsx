@@ -6,6 +6,7 @@ import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { useAdmin } from '@/contexts/AdminContext';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import Image from 'next/image';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -83,10 +84,16 @@ export function Header({ onMenuClick }: HeaderProps) {
               <Menu className="h-5 w-5" />
             </Button>
           )}
-          <div className="flex items-center gap-2">
-            <Building2 className="h-6 w-6 text-primary" />
+          <div className="flex items-center gap-3">
+            <Image 
+              src="/logo.png" 
+              alt="Apex Buildcon Logo" 
+              width={40} 
+              height={40} 
+              className="h-10 w-auto" 
+            />
             <div className="hidden sm:block">
-              <h1 className="text-lg font-semibold leading-none">Jaani Constructions</h1>
+              <h1 className="text-lg font-semibold leading-none">Apex Buildcon</h1>
               <p className="text-xs text-muted-foreground mt-0.5">Funds Management</p>
             </div>
           </div>

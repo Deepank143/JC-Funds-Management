@@ -1,4 +1,4 @@
-# Jaani Constructions - Funds Management System
+# Apex Buildcon - Funds Management System
 
 [![Next.js](https://img.shields.io/badge/Next.js-14-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
 [![Supabase](https://img.shields.io/badge/Supabase-Database-green?style=for-the-badge&logo=supabase)](https://supabase.com/)
@@ -13,7 +13,7 @@ A premium, enterprise-grade funds tracking and project profitability dashboard s
 
 ## 🏗️ Project Overview
 
-Jaani Constructions Funds Management System provides a unified platform to track multi-project finances with high precision. It implements a **Maker-Checker security model**, ensuring that while accountants can record data, only the owner can finalize sensitive financial transactions like payments.
+Apex Buildcon Funds Management System provides a unified platform to track multi-project finances with high precision. It implements a **Maker-Checker security model**, ensuring that while accountants can record data, only the owner can finalize sensitive financial transactions like payments.
 
 ### Key Value Propositions
 - **Financial Integrity**: Project-wise P&L tracking with real-time margin calculations.
@@ -108,7 +108,7 @@ npm run dev
 ---
 
 ## 📝 License
-Proprietary software for **Jaani Constructions**. All rights reserved.
+Proprietary software for **Apex Buildcon**. All rights reserved.
 
 ---
 

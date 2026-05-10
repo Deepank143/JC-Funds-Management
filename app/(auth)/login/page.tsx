@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -103,12 +104,17 @@ export default function LoginPage() {
   return (
     <Card className="w-full max-w-md mx-auto">
       <CardHeader className="space-y-1 text-center">
-        <div className="flex justify-center mb-4">
-          <div className="bg-primary/10 p-3 rounded-full">
-            <Building2 className="h-8 w-8 text-primary" />
-          </div>
+        <div className="flex justify-center mb-6">
+          <Image 
+            src="/logo.png" 
+            alt="Apex Buildcon Logo" 
+            width={80} 
+            height={80} 
+            className="h-20 w-auto" 
+            priority
+          />
         </div>
-        <CardTitle className="text-2xl font-bold">Jaani Constructions</CardTitle>
+        <CardTitle className="text-2xl font-bold">Apex Buildcon</CardTitle>
         <CardDescription>
           Funds Management System
         </CardDescription>
@@ -133,7 +139,7 @@ export default function LoginPage() {
               <Input
                 id="email"
                 type="email"
-                placeholder="harsh@jaaniconstructions.com"
+                placeholder="admin@apexbuildcon.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -199,7 +205,7 @@ export default function LoginPage() {
       
       <CardFooter className="flex justify-center border-t py-4 bg-muted/20 rounded-b-lg">
         <p className="text-xs text-muted-foreground text-center">
-          By continuing, you agree to the Jaani Constructions Terms of Service and Privacy Policy.
+          By continuing, you agree to the Apex Buildcon Terms of Service and Privacy Policy.
         </p>
       </CardFooter>
     </Card>

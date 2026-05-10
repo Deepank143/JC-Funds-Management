@@ -8,8 +8,8 @@ import { AdminProvider } from '@/contexts/AdminContext';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Jaani Constructions - Funds Management',
-  description: 'Track projects, income, and expenses for Jaani Constructions',
+  title: 'Apex Buildcon - Funds Management',
+  description: 'Track projects, income, and expenses for Apex Buildcon',
 };
 
 export default function RootLayout({

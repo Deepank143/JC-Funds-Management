@@ -1,5 +1,5 @@
 -- ============================================================
--- Jaani Constructions - Dummy Data for Demonstration
+-- Apex Buildcon - Dummy Data for Demonstration
 -- ============================================================
 -- INSTRUCTIONS: 
 -- 1. Copy this SQL and run it in your Supabase SQL Editor.

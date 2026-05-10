@@ -16,14 +16,6 @@ export const getSupabase = () => {
   return _supabase;
 };
 
-// Legacy export — kept for backward compatibility with existing components
-export const supabase = typeof window !== 'undefined'
-  ? createClient<Database>(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    )
-  : (null as unknown as SupabaseClient<Database>);
-
 // Server-side Supabase client (for API routes)
 export const getServerClient = () => {
   const cookieStore = cookies();

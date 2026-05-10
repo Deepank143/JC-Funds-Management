@@ -59,31 +59,32 @@ export async function GET() {
           amount: pendingAmount,
           date: e.expense_date,
           project_name: e.projects?.name,
+          severity: 'medium',
         });
       });
     }
 
-    // 3. Budget Thresholds (Projects where expenses >= 90% of budget)
+    // 3. Budget Thresholds (Projects where expenses >= 90% of contract_value)
     const { data: projectsData, error: projectsDataError } = await supabase
       .from('projects')
-      .select('id, name, budget, expenses(amount)')
+      .select('id, name, contract_value, expenses(amount)')
       .eq('status', 'active');
 
     if (projectsDataError) throw projectsDataError;
 
     if (projectsData) {
       projectsData.forEach((p: any) => {
-        if (!p.budget) return; // Skip if no budget set
+        if (!p.contract_value) return; // Skip if no contract value set
         
         const totalExpenses = p.expenses.reduce((sum: number, e: any) => sum + (e.amount || 0), 0);
-        const percentage = (totalExpenses / p.budget) * 100;
+        const percentage = (totalExpenses / p.contract_value) * 100;
 
         if (percentage >= 90) {
           alerts.push({
             id: `budget-${p.id}`,
             type: 'budget_threshold',
             title: percentage >= 100 ? 'Budget Exceeded' : 'Budget Warning',
-            description: `Project "${p.name}" has used ${percentage.toFixed(1)}% of its budget.`,
+            description: `Project "${p.name}" has used ${percentage.toFixed(1)}% of its contract value.`,
             amount: totalExpenses,
             date: new Date().toISOString(),
             project_name: p.name,
@@ -105,4 +106,3 @@ export async function GET() {
     );
   }
 }
-

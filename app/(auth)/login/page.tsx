@@ -21,11 +21,26 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
 
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        const searchParams = new URLSearchParams(window.location.search);
+        const next = searchParams.get('next') || '/';
+        window.location.href = next;
+      }
+    };
+    checkSession();
+  }, [supabase.auth]);
+
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
+      const searchParams = new URLSearchParams(window.location.search);
+      const next = searchParams.get('next') || '/';
+
       if (authMode === 'login') {
         const { data, error } = await supabase.auth.signInWithPassword({
           email,
@@ -39,18 +54,16 @@ export default function LoginPage() {
             title: 'Welcome back!',
             description: 'Redirecting to dashboard...',
           });
-          // Use window.location for a full refresh to ensure the session cookie is correctly picked up by middleware
-          window.location.href = '/';
+          window.location.href = next;
         }
       } else {
-        // Signup logic - triggers email verification/OTP
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
-            emailRedirectTo: `${window.location.origin}/api/auth/callback`,
+            emailRedirectTo: `${window.location.origin}/api/auth/callback?next=${encodeURIComponent(next)}`,
             data: {
-              full_name: email.split('@')[0], // Default name
+              full_name: email.split('@')[0],
             }
           }
         });
@@ -62,7 +75,7 @@ export default function LoginPage() {
             title: 'Account created!',
             description: 'You are now signed in.',
           });
-          window.location.href = '/';
+          window.location.href = next;
         } else if (data.user) {
           toast({
             title: 'Verification email sent!',
@@ -83,10 +96,13 @@ export default function LoginPage() {
 
   const handleGoogleLogin = async () => {
     try {
+      const searchParams = new URLSearchParams(window.location.search);
+      const next = searchParams.get('next') || '/';
+
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/api/auth/callback`,
+          redirectTo: `${window.location.origin}/api/auth/callback?next=${encodeURIComponent(next)}`,
         },
       });
 

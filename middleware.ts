@@ -17,6 +17,10 @@ export async function middleware(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     const url = req.nextUrl.clone();
+    const next = req.nextUrl.pathname;
+    if (next !== '/') {
+      url.searchParams.set('next', next);
+    }
     url.pathname = '/login';
     return NextResponse.redirect(url);
   }

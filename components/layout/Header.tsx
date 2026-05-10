@@ -38,7 +38,7 @@ export function Header({ onMenuClick }: HeaderProps) {
       }
     };
     getUser();
-  }, []);
+  }, [supabase.auth]);
 
   const handleSignOut = async () => {
     try {

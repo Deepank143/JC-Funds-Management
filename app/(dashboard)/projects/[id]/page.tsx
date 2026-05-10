@@ -12,8 +12,10 @@ import { formatINR, formatDate, getProfitColor } from '@/lib/utils';
 import { useAdmin } from '@/contexts/AdminContext';
 import { 
   ArrowLeft, Building2, MapPin, IndianRupee,
-  TrendingUp, TrendingDown, Wallet, CheckCircle2, Clock, AlertCircle, EyeOff
+  TrendingUp, TrendingDown, Wallet, CheckCircle2, Clock, AlertCircle, EyeOff,
+  LayoutList
 } from 'lucide-react';
+import { MilestoneManager } from '@/components/projects/MilestoneManager';
 
 interface ProjectPnL {
   summary: {
@@ -30,7 +32,14 @@ interface ProjectPnL {
     payment_date: string;
     payment_mode: string;
     reference_number: string;
+    milestone_id: string | null;
     milestones: { name: string; percentage: number } | null;
+  }>;
+  expenses: Array<{
+    amount: number;
+    amount_paid: number;
+    milestone_id: string | null;
+    expense_categories: { name: string };
   }>;
   category_breakdown: Record<string, {
     total: number;
@@ -128,6 +137,23 @@ export default function ProjectDetailPage() {
   }));
 
   const marginColor = getProfitColor(summary.profit_margin);
+  
+  // Calculate milestone stats
+  const milestoneStats = project?.milestones?.map(milestone => {
+    const received = pnl?.income
+      ?.filter(inc => inc.milestone_id === milestone.id)
+      ?.reduce((sum, inc) => sum + inc.amount, 0) || 0;
+      
+    const expended = pnl?.expenses
+      ?.filter(exp => exp.milestone_id === milestone.id)
+      ?.reduce((sum, exp) => sum + exp.amount, 0) || 0;
+
+    const pending = milestone.amount - received;
+    const progress = (received / milestone.amount) * 100;
+    const netPosition = received - expended;
+    
+    return { ...milestone, received, expended, pending, progress, netPosition };
+  }) || [];
 
   return (
     <div className="space-y-6">
@@ -320,46 +346,138 @@ export default function ProjectDetailPage() {
         </Card>
       )}
 
-      {/* Milestones */}
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Payment Milestones</CardTitle>
+          <MilestoneManager 
+            projectId={project.id} 
+            contractValue={project.contract_value} 
+            existingMilestones={project.milestones}
+          />
         </CardHeader>
         <CardContent>
-          <div className="space-y-3">
-            {project.milestones?.map((milestone) => (
-              <div 
-                key={milestone.id}
-                className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-lg border gap-3"
-              >
-                <div className="flex items-center gap-3">
-                  {milestone.status === 'paid' ? (
-                    <CheckCircle2 className="h-5 w-5 text-emerald-500" />
-                  ) : milestone.status === 'billed' ? (
-                    <Clock className="h-5 w-5 text-amber-500" />
-                  ) : (
-                    <AlertCircle className="h-5 w-5 text-muted-foreground" />
-                  )}
-                  <div>
-                    <p className="font-medium">{milestone.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {milestone.percentage}% • Due: {milestone.due_date ? formatDate(milestone.due_date) : 'Not set'}
-                    </p>
-                  </div>
+          {!project.milestones || project.milestones.length === 0 ? (
+            <div className="text-center py-12 border-2 border-dashed rounded-xl bg-muted/30">
+              <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                <LayoutList className="h-6 w-6 text-primary" />
+              </div>
+              <h3 className="text-lg font-semibold">No Schedule Defined</h3>
+              <p className="text-sm text-muted-foreground max-w-[280px] mx-auto mt-1 mb-6">
+                Define your payment milestones and amounts to track project receivables.
+              </p>
+              <MilestoneManager 
+                projectId={project.id} 
+                contractValue={project.contract_value} 
+                existingMilestones={[]}
+              />
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {/* Overall Schedule Summary */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 rounded-xl bg-muted/30 border">
+                <div>
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Total Schedule</p>
+                  <p className="text-sm font-bold mt-0.5">{formatINR(project.milestones.reduce((s, m) => s + m.amount, 0))}</p>
                 </div>
-                <div className="flex items-center justify-between sm:text-right sm:flex-col sm:items-end gap-2 border-t sm:border-0 pt-2 sm:pt-0">
-                  <p className="font-semibold">{formatINR(milestone.amount)}</p>
-                  <Badge variant={
-                    milestone.status === 'paid' ? 'default' : 
-                    milestone.status === 'billed' ? 'secondary' : 'outline'
-                  } className="text-[10px] h-5">
-                    {milestone.status}
-                  </Badge>
+                <div>
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Received</p>
+                  <p className="text-sm font-bold mt-0.5 text-emerald-600">
+                    {formatINR(milestoneStats.reduce((s, m) => s + m.received, 0))}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Pending</p>
+                  <p className="text-sm font-bold mt-0.5 text-amber-600">
+                    {formatINR(milestoneStats.reduce((s, m) => s + m.pending, 0))}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Completion</p>
+                  <p className="text-sm font-bold mt-0.5">
+                    {Math.round((milestoneStats.reduce((s, m) => s + m.received, 0) / project.contract_value) * 100)}%
+                  </p>
                 </div>
               </div>
-            ))}
-          </div>
-        </CardContent>
+
+              <div className="space-y-3">
+                {milestoneStats.map((milestone) => (
+                  <div 
+                    key={milestone.id}
+                    className="flex flex-col p-4 rounded-xl border bg-card hover:shadow-sm transition-all gap-4"
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex items-start gap-3">
+                        <div className={`mt-1 p-1.5 rounded-full ${
+                          milestone.progress >= 100 ? 'bg-emerald-100' : 
+                          milestone.progress > 0 ? 'bg-amber-100' : 'bg-slate-100'
+                        }`}>
+                          {milestone.progress >= 100 ? (
+                            <CheckCircle2 className={`h-4 w-4 ${milestone.progress >= 100 ? 'text-emerald-600' : 'text-slate-400'}`} />
+                          ) : (
+                            <Clock className={`h-4 w-4 ${milestone.progress > 0 ? 'text-amber-600' : 'text-slate-400'}`} />
+                          )}
+                        </div>
+                        <div>
+                          <p className="font-semibold text-sm leading-tight">{milestone.name}</p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-muted">
+                              {milestone.percentage}%
+                            </span>
+                            <span className="text-[10px] text-muted-foreground">
+                              Due: {milestone.due_date ? formatDate(milestone.due_date) : 'Not set'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-bold text-sm">{formatINR(milestone.amount)}</p>
+                        <Badge variant={
+                          milestone.progress >= 100 ? 'default' : 
+                          milestone.progress > 0 ? 'secondary' : 'outline'
+                        } className="text-[10px] px-1.5 py-0 h-4 mt-1">
+                          {milestone.progress >= 100 ? 'Fully Paid' : 
+                           milestone.progress > 0 ? 'Partially Paid' : 'Pending'}
+                        </Badge>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-[10px]">
+                        <span className="text-muted-foreground">Payment Progress</span>
+                        <span className="font-medium">{Math.round(milestone.progress)}%</span>
+                      </div>
+                      <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+                        <div 
+                          className={`h-full transition-all duration-500 ${
+                            milestone.progress >= 100 ? 'bg-emerald-500' : 'bg-amber-500'
+                          }`}
+                          style={{ width: `${Math.min(milestone.progress, 100)}%` }}
+                        />
+                      </div>
+                      
+                      <div className="grid grid-cols-3 gap-2 p-2 rounded-lg bg-muted/20 border border-muted/30 mt-2">
+                        <div>
+                          <p className="text-[9px] uppercase text-muted-foreground font-medium">Income</p>
+                          <p className="text-[11px] font-bold text-emerald-600">{formatINR(milestone.received)}</p>
+                        </div>
+                        <div>
+                          <p className="text-[9px] uppercase text-muted-foreground font-medium">Expenses</p>
+                          <p className="text-[11px] font-bold text-red-600">{formatINR(milestone.expended)}</p>
+                        </div>
+                        <div>
+                          <p className="text-[9px] uppercase text-muted-foreground font-medium">Net Stage</p>
+                          <p className={`text-[11px] font-bold ${milestone.netPosition >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>
+                            {formatINR(milestone.netPosition)}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+        )}
+      </CardContent>
       </Card>
 
       {/* Income History */}

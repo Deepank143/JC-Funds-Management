@@ -21,7 +21,7 @@ export async function GET(
     const { data: expenses, error: expenseError } = await supabase
       .from('expenses')
       .select(`
-        amount, payment_status, amount_paid,
+        amount, payment_status, amount_paid, milestone_id,
         expense_categories(name),
         expense_subcategories(name),
         vendors(name)
@@ -34,7 +34,7 @@ export async function GET(
     const { data: income, error: incomeError } = await supabase
       .from('income')
       .select(`
-        amount, payment_date, payment_mode, reference_number,
+        amount, payment_date, payment_mode, reference_number, milestone_id,
         milestones(name, percentage)
       `)
       .eq('project_id', id)

@@ -32,7 +32,7 @@ const projectSchema = z.object({
   }),
   start_date: z.string().optional(),
   expected_end_date: z.string().optional(),
-  milestones: z.array(milestoneSchema).min(1, 'At least one milestone required'),
+  milestones: z.array(milestoneSchema).optional(),
 });
 
 type ProjectFormData = z.infer<typeof projectSchema>;
@@ -42,14 +42,6 @@ interface Client {
   name: string;
 }
 
-const defaultMilestones = [
-  { name: 'Advance', percentage: '10' },
-  { name: 'Plinth Complete', percentage: '20' },
-  { name: 'Slab Complete', percentage: '30' },
-  { name: 'Finishing', percentage: '30' },
-  { name: 'Handover', percentage: '10' },
-];
-
 export function ProjectForm() {
   const [open, setOpen] = useState(false);
   const queryClient = useQueryClient();
@@ -57,7 +49,7 @@ export function ProjectForm() {
   const { register, handleSubmit, watch, setValue, formState: { errors }, reset } = useForm<ProjectFormData>({
     resolver: zodResolver(projectSchema),
     defaultValues: {
-      milestones: defaultMilestones,
+      milestones: [],
     },
   });
 
@@ -80,7 +72,7 @@ export function ProjectForm() {
         body: JSON.stringify({
           ...data,
           contract_value: Number(data.contract_value),
-          milestones: data.milestones.map((m, i) => ({
+          milestones: (data.milestones || []).map((m, i) => ({
             ...m,
             percentage: Number(m.percentage),
             sort_order: i,
@@ -102,19 +94,6 @@ export function ProjectForm() {
     },
   });
 
-  const addMilestone = () => {
-    setValue('milestones', [...milestones, { name: '', percentage: '', due_date: '' }]);
-  };
-
-  const removeMilestone = (index: number) => {
-    setValue('milestones', milestones.filter((_, i) => i !== index));
-  };
-
-  const updateMilestone = (index: number, field: string, value: string) => {
-    const updated = [...milestones];
-    updated[index] = { ...updated[index], [field]: value };
-    setValue('milestones', updated);
-  };
 
   const onSubmit = (data: ProjectFormData) => {
     mutation.mutate(data);
@@ -182,57 +161,6 @@ export function ProjectForm() {
             <Textarea id="description" placeholder="Project details..." {...register('description')} />
           </div>
 
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <Label>Milestones *</Label>
-              <Button type="button" variant="outline" size="sm" onClick={addMilestone}>
-                <Plus className="mr-1 h-3 w-3" />
-                Add
-              </Button>
-            </div>
-
-            {milestones.map((milestone, index) => (
-              <div key={index} className="flex items-end gap-2 rounded-lg border p-3">
-                <div className="flex-1 space-y-2">
-                  <Input
-                    placeholder="Milestone name"
-                    value={milestone.name}
-                    onChange={(e) => updateMilestone(index, 'name', e.target.value)}
-                  />
-                </div>
-                <div className="w-24 space-y-2">
-                  <Input
-                    placeholder="%"
-                    value={milestone.percentage}
-                    onChange={(e) => updateMilestone(index, 'percentage', e.target.value)}
-                  />
-                </div>
-                <div className="w-32 space-y-2">
-                  <Input
-                    type="date"
-                    value={milestone.due_date || ''}
-                    onChange={(e) => updateMilestone(index, 'due_date', e.target.value)}
-                  />
-                </div>
-                {milestones.length > 1 && (
-                  <Button type="button" variant="ghost" size="icon" onClick={() => removeMilestone(index)}>
-                    <Trash2 className="h-4 w-4 text-red-500" />
-                  </Button>
-                )}
-              </div>
-            ))}
-
-            {contractValue > 0 && (
-              <div className="text-xs text-muted-foreground">
-                {milestones.map((m, i) => (
-                  <span key={i}>
-                    {m.name}: {formatINR((Number(m.percentage) * contractValue) / 100)}
-                    {i < milestones.length - 1 ? ' | ' : ''}
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
 
           <Button type="submit" className="w-full" disabled={mutation.isPending}>
             {mutation.isPending ? (

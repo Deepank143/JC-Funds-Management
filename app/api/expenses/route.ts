@@ -65,6 +65,7 @@ export async function POST(request: Request) {
         amount_paid: body.payment_status === 'paid' ? body.amount : (body.amount_paid || 0),
         payment_mode: body.payment_mode,
         reference_number: body.reference_number,
+        milestone_id: body.milestone_id,
         notes: body.notes,
         created_by: session.user.id,
       } as any)

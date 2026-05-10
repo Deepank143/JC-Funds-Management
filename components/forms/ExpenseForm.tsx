@@ -34,6 +34,7 @@ const expenseSchema = z.object({
   payment_status: z.enum(['paid', 'unpaid', 'partial']),
   payment_mode: z.string().optional(),
   reference_number: z.string().optional(),
+  milestone_id: z.string().optional().nullable(),
   notes: z.string().optional(),
 });
 
@@ -62,6 +63,7 @@ export function ExpenseForm() {
   });
 
   const selectedCategory = watch('category_id');
+  const selectedProject = watch('project_id');
   const currentStatus = watch('payment_status');
 
   const { data: projects } = useQuery<Project[]>({
@@ -81,6 +83,17 @@ export function ExpenseForm() {
       return (await fetch(`/api/expenses/subcategories?category_id=${selectedCategory}`)).json();
     },
     enabled: !!selectedCategory,
+  });
+  
+  const { data: projectMilestones } = useQuery<any[]>({
+    queryKey: ['milestones', selectedProject],
+    queryFn: async () => {
+      if (!selectedProject) return [];
+      const res = await fetch(`/api/projects/${selectedProject}`);
+      const project = await res.json();
+      return project.milestones || [];
+    },
+    enabled: !!selectedProject,
   });
 
   const { data: vendors } = useQuery<Vendor[]>({
@@ -231,6 +244,26 @@ export function ExpenseForm() {
                 <p className="text-sm text-red-500">{errors.subcategory_id.message}</p>
               )}
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="milestone_id">Project Milestone (Optional)</Label>
+            <Select onValueChange={(value) => setValue('milestone_id', value === 'none' ? null : value)}>
+              <SelectTrigger>
+                <SelectValue placeholder={selectedProject ? "Link to a milestone" : "Select a project first"} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">No Milestone (General Expense)</SelectItem>
+                {Array.isArray(projectMilestones) && projectMilestones.map((m) => (
+                  <SelectItem key={m.id} value={m.id}>
+                    {m.name} (₹{Number(m.amount).toLocaleString()})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-[10px] text-muted-foreground">
+              Linking expenses to milestones helps track construction stage profitability.
+            </p>
           </div>
 
           <div className="space-y-2">

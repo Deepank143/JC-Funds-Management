@@ -137,6 +137,7 @@ CREATE TABLE expenses (
   category_id UUID REFERENCES expense_categories(id),
   subcategory_id UUID REFERENCES expense_subcategories(id),
   vendor_id UUID REFERENCES vendors(id) ON DELETE SET NULL,
+  milestone_id UUID REFERENCES milestones(id) ON DELETE SET NULL,
   amount DECIMAL(12,2) NOT NULL,
   expense_date DATE NOT NULL,
   payment_status TEXT CHECK (payment_status IN ('paid', 'unpaid', 'partial')) DEFAULT 'unpaid',

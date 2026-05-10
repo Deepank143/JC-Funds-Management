@@ -1,53 +1,71 @@
--- ============================================================
--- Apex Buildcon - Dummy Data for Demonstration
--- ============================================================
--- INSTRUCTIONS: 
--- 1. Copy this SQL and run it in your Supabase SQL Editor.
--- 2. This will populate your app with realistic projects, expenses, and income.
--- 3. To delete this data, run: DELETE FROM clients; DELETE FROM vendors; (Cascade will handle the rest)
--- ============================================================
+-- Apex Buildcon Dummy Data (Comprehensive Project & Milestone Tracking)
 
--- 1. INSERT CLIENTS
-INSERT INTO clients (id, name, contact_person, phone, email, address)
-VALUES 
-  ('c1111111-1111-4111-b111-111111111111', 'Sunil Mehta', 'Sunil Mehta', '+91 98250 12345', 'sunil@example.com', 'B-402, Royal Residency, Ahmedabad'),
-  ('c2222222-2222-4222-b222-222222222222', 'Ravi Infrastructure', 'Rajesh Bhai', '+91 99090 54321', 'contact@ravi-infra.com', '101, Corporate Tower, SG Highway');
+-- 1. Setup Sample Client
+INSERT INTO clients (id, name, email, phone)
+VALUES ('22222222-2222-2222-2222-222222222222', 'Harsh Jani', 'janiharsh996@gmail.com', '9876543210')
+ON CONFLICT (id) DO NOTHING;
 
--- 2. INSERT PROJECTS
-INSERT INTO projects (id, client_id, name, location, contract_value, status, start_date)
-VALUES 
-  ('a1111111-1111-4111-b111-111111111111', 'c1111111-1111-4111-b111-111111111111', 'Mehta Villa - Renovation', 'Gandhinagar', 1250000, 'active', CURRENT_DATE - INTERVAL '30 days'),
-  ('a2222222-2222-4222-b222-222222222222', 'c2222222-2222-4222-b222-222222222222', 'Commercial Complex - Phase 1', 'Ahmedabad', 8500000, 'active', CURRENT_DATE - INTERVAL '60 days');
+-- 2. Setup RA Residence Project
+INSERT INTO projects (id, name, location, client_id, contract_value, status, start_date)
+VALUES (
+  '11111111-1111-1111-1111-111111111111', 
+  'RA Residence', 
+  'Ahmadabad, Gujarat', 
+  '22222222-2222-2222-2222-222222222222', 
+  2500000.00, 
+  'active', 
+  '2026-02-01'
+)
+ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, contract_value = EXCLUDED.contract_value;
 
--- 3. INSERT VENDORS
-INSERT INTO vendors (id, name, type, phone)
-VALUES 
-  ('f1111111-1111-4111-b111-111111111111', 'Gajanan Cement Agency', 'vendor', '+91 98000 11111'),
-  ('f2222222-2222-4222-b222-222222222222', 'Shakti Steels', 'vendor', '+91 98000 22222'),
-  ('f3333333-3333-4333-b333-333333333333', 'Ahmedabad Electricals', 'vendor', '+91 98000 33333'),
-  ('f4444444-4444-4444-b444-444444444444', 'Ram Singh Labour Group', 'labour', '+91 98000 44444');
+-- 3. Setup 12 Payment Milestones (RA Residence Schedule)
+DELETE FROM milestones WHERE project_id = '11111111-1111-1111-1111-111111111111';
 
--- 4. INSERT MILESTONES
-INSERT INTO milestones (project_id, name, percentage, amount, status, sort_order)
+INSERT INTO milestones (id, project_id, name, amount, percentage, order_index, due_date)
 VALUES 
-  ('a1111111-1111-4111-b111-111111111111', 'Initial Advance', 20, 250000, 'paid', 0),
-  ('a1111111-1111-4111-b111-111111111111', 'Slab Completion', 30, 375000, 'pending', 1),
-  ('a2222222-2222-4222-b222-222222222222', 'Site Preparation', 10, 850000, 'paid', 0),
-  ('a2222222-2222-4222-b222-222222222222', 'Foundation Work', 20, 1700000, 'paid', 1);
+('m1', '11111111-1111-1111-1111-111111111111', 'Advance / Booking', 250000, 10, 0, '2026-02-01'),
+('m2', '11111111-1111-1111-1111-111111111111', 'Excavation Completion', 200000, 8, 1, '2026-03-01'),
+('m3', '11111111-1111-1111-1111-111111111111', 'Plinth Level', 300000, 12, 2, '2026-04-01'),
+('m4', '11111111-1111-1111-1111-111111111111', 'Ground Floor Slab', 250000, 10, 3, '2026-05-15'),
+('m5', '11111111-1111-1111-1111-111111111111', 'First Floor Slab', 250000, 10, 4, '2026-07-01'),
+('m6', '11111111-1111-1111-1111-111111111111', 'Brickwork & Internal Plaster', 200000, 8, 5, '2026-08-15'),
+('m7', '11111111-1111-1111-1111-111111111111', 'External Plaster', 150000, 6, 6, '2026-10-01'),
+('m8', '11111111-1111-1111-1111-111111111111', 'Plumbing & Electrical Conceal', 200000, 8, 7, '2026-11-15'),
+('m9', '11111111-1111-1111-1111-111111111111', 'Flooring & Tiling', 250000, 10, 8, '2027-01-01'),
+('m10', '11111111-1111-1111-1111-111111111111', 'Painting & Finishing', 200000, 8, 9, '2027-02-15'),
+('m11', '11111111-1111-1111-1111-111111111111', 'Doors & Windows', 150000, 6, 10, '2027-04-01'),
+('m12', '11111111-1111-1111-1111-111111111111', 'Handover', 100000, 4, 11, '2027-05-01');
 
--- 5. INSERT INCOME (Matching the paid milestones)
-INSERT INTO income (project_id, client_id, milestone_id, amount, payment_date, payment_mode)
+-- 4. Setup Income (Payments Received)
+INSERT INTO income (project_id, amount, payment_date, payment_mode, reference_number, milestone_id)
 VALUES 
-  ('a1111111-1111-4111-b111-111111111111', 'c1111111-1111-4111-b111-111111111111', (SELECT id FROM milestones WHERE name='Initial Advance' LIMIT 1), 250000, CURRENT_DATE - INTERVAL '25 days', 'bank_transfer'),
-  ('a2222222-2222-4222-b222-222222222222', 'c2222222-2222-4222-b222-222222222222', (SELECT id FROM milestones WHERE name='Site Preparation' LIMIT 1), 850000, CURRENT_DATE - INTERVAL '55 days', 'bank_transfer'),
-  ('a2222222-2222-4222-b222-222222222222', 'c2222222-2222-4222-b222-222222222222', (SELECT id FROM milestones WHERE name='Foundation Work' LIMIT 1), 1700000, CURRENT_DATE - INTERVAL '40 days', 'cheque');
+('11111111-1111-1111-1111-111111111111', 250000, '2026-02-05', 'bank_transfer', 'TXN001', 'm1'),
+('11111111-1111-1111-1111-111111111111', 200000, '2026-03-05', 'cheque', 'CHQ442', 'm2');
 
--- 6. INSERT EXPENSES
--- We need category IDs, we'll use a subquery to find them
-INSERT INTO expenses (project_id, vendor_id, amount, expense_date, payment_status, amount_paid, notes)
+-- 5. Setup Linked Expenses (Stage-wise Profitability)
+INSERT INTO expenses (project_id, category_id, subcategory_id, amount, expense_date, payment_status, amount_paid, notes, milestone_id)
 VALUES 
-  ('a1111111-1111-4111-b111-111111111111', 'f1111111-1111-4111-b111-111111111111', 45000, CURRENT_DATE - INTERVAL '20 days', 'paid', 45000, '50 bags of Ultratech Cement'),
-  ('a1111111-1111-4111-b111-111111111111', 'f4444444-4444-4444-b444-444444444444', 12000, CURRENT_DATE - INTERVAL '15 days', 'paid', 12000, 'Weekly labour payment'),
-  ('a2222222-2222-4222-b222-222222222222', 'f2222222-2222-4222-b222-222222222222', 450000, CURRENT_DATE - INTERVAL '30 days', 'paid', 450000, 'TMT Steel Bars for foundation'),
-  ('a2222222-2222-4222-b222-222222222222', 'f1111111-1111-4111-b111-111111111111', 125000, CURRENT_DATE - INTERVAL '10 days', 'unpaid', 0, 'Pending cement invoice'),
-  ('a2222222-2222-4222-b222-222222222222', 'f3333333-3333-4333-b333-333333333333', 18000, CURRENT_DATE - INTERVAL '5 days', 'paid', 18000, 'Electric conduit pipes');
+-- Expenses for Advance stage (Admin, Permits)
+('11111111-1111-1111-1111-111111111111', 
+  (SELECT id FROM expense_categories WHERE name = 'Misc'),
+  (SELECT id FROM expense_subcategories WHERE name = 'Permits'),
+  50000, '2026-02-10', 'paid', 50000, 'Corporation plan approval', 'm1'),
+
+-- Expenses for Excavation stage (Labour + Machine)
+('11111111-1111-1111-1111-111111111111', 
+  (SELECT id FROM expense_categories WHERE name = 'Labour'),
+  (SELECT id FROM expense_subcategories WHERE name = 'Daily Wage'),
+  40000, '2026-03-10', 'paid', 40000, 'JCB and Manual labour for excavation', 'm2'),
+  
+('11111111-1111-1111-1111-111111111111', 
+  (SELECT id FROM expense_categories WHERE name = 'Raw Material'),
+  (SELECT id FROM expense_subcategories WHERE name = 'Cement'),
+  60000, '2026-03-12', 'paid', 60000, 'Initial cement stock for foundation', 'm2');
+
+-- 6. General (Non-linked) Expenses
+INSERT INTO expenses (project_id, category_id, subcategory_id, amount, expense_date, payment_status, amount_paid, notes)
+VALUES 
+('11111111-1111-1111-1111-111111111111', 
+  (SELECT id FROM expense_categories WHERE name = 'Misc'),
+  (SELECT id FROM expense_subcategories WHERE name = 'Refreshments'),
+  2000, '2026-02-15', 'paid', 2000, 'Site office tea and water');

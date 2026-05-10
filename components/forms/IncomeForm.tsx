@@ -141,7 +141,13 @@ export function IncomeForm() {
 
           <div className="space-y-2">
             <Label htmlFor="milestone_id">Against Milestone</Label>
-            <Select onValueChange={(value) => setValue('milestone_id', value)}>
+            <Select onValueChange={(value) => {
+              setValue('milestone_id', value);
+              const milestone = milestones?.find((m: any) => m.id === value);
+              if (milestone) {
+                setValue('amount', milestone.amount.toString());
+              }
+            }}>
               <SelectTrigger>
                 <SelectValue placeholder="Select milestone (optional)" />
               </SelectTrigger>

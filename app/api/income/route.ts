@@ -68,10 +68,33 @@ export async function POST(request: Request) {
 
     // Update milestone status if milestone_id provided
     if (body.milestone_id) {
-      await supabase
+      // Get current milestone and total income for it to check if it's fully paid
+      const { data: milestone } = await supabase
         .from('milestones')
-        .update({ status: 'paid' } as any)
-        .eq('id', body.milestone_id);
+        .select('amount')
+        .eq('id', body.milestone_id)
+        .single();
+      
+      const { data: totalIncome } = await supabase
+        .from('income')
+        .select('amount')
+        .eq('milestone_id', body.milestone_id);
+      
+      const received = (totalIncome || []).reduce((sum: number, inc: any) => sum + Number(inc.amount), 0) + Number(body.amount);
+      
+      // Only mark as paid if the total received amount is >= milestone amount
+      if (milestone && received >= Number(milestone.amount)) {
+        await supabase
+          .from('milestones')
+          .update({ status: 'paid' } as any)
+          .eq('id', body.milestone_id);
+      } else {
+        // Otherwise keep it as 'billed' or 'pending' - for now we use 'billed' as it indicates payment started
+        await supabase
+          .from('milestones')
+          .update({ status: 'billed' } as any)
+          .eq('id', body.milestone_id);
+      }
     }
 
     return NextResponse.json(data, { status: 201 });

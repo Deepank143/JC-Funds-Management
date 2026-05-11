@@ -5,13 +5,13 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-// Format Indian Rupee
+// Format Indian Rupee with 2 decimal places for precision
 export function formatINR(amount: number): string {
   return new Intl.NumberFormat('en-IN', {
     style: 'currency',
     currency: 'INR',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
   }).format(amount);
 }
 
@@ -42,12 +42,24 @@ export function formatDateTime(date: string | Date): string {
   });
 }
 
-// Calculate days between dates
+// Calculate days between dates (signed: positive = date2 is after date1, negative = date2 is before date1)
 export function daysBetween(date1: string | Date, date2: string | Date): number {
   const d1 = new Date(date1);
   const d2 = new Date(date2);
-  const diffTime = Math.abs(d2.getTime() - d1.getTime());
-  return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  d1.setHours(0, 0, 0, 0);
+  d2.setHours(0, 0, 0, 0);
+  const diffTime = d2.getTime() - d1.getTime();
+  return Math.round(diffTime / (1000 * 60 * 60 * 24));
+}
+
+// Get user-friendly relative time string
+export function getRelativeTime(date: string | Date): string {
+  const diff = daysBetween(date, new Date());
+  if (diff === 0) return 'today';
+  if (diff === 1) return 'yesterday';
+  if (diff === -1) return 'tomorrow';
+  if (diff > 1) return `${diff}d ago`;
+  return `in ${Math.abs(diff)}d`;
 }
 
 // Get color based on profit margin

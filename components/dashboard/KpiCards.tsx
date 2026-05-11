@@ -31,7 +31,8 @@ export function KpiCards() {
     refetchInterval: 30000, // Refetch every 30 seconds
   });
 
-  const { isAdminMode } = useAdmin();
+  const { isAdminMode, userRole } = useAdmin();
+  const showData = isAdminMode || userRole === 'accountant';
 
   if (isLoading) {
     return (
@@ -115,7 +116,7 @@ export function KpiCards() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold tracking-tight">
-              {card.isSensitive && !isAdminMode ? (
+              {card.isSensitive && !showData ? (
                 <span className="text-muted-foreground/30 font-mono tracking-tighter">
                   ••••••
                 </span>

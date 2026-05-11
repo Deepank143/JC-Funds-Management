@@ -44,31 +44,45 @@ export async function PUT(
       status: m.status || 'pending',
     }));
 
-    // 3. Perform atomic update using a transaction-like approach
-    // In Supabase client, we'll delete non-linked ones and upsert new ones
-    // Or simpler: delete all except linked, and insert all new.
-    // But to keep it simple and safe for now: 
-    // We'll delete all existing milestones for this project and insert new ones.
-    // WARNING: This will fail if foreign key constraints are violated (i.e. linked payments).
+    // 3. Perform atomic update using a smarter approach
+    // We will separate milestones into those that already have IDs (updates) and those that don't (inserts)
     
-    // First, delete milestones that are NOT linked to payments
+    // First, let's identify which ones to keep/update and which to insert
+    const milestonesToUpsert = milestones.map((m: any, index: number) => ({
+      id: m.id, // If provided from frontend
+      project_id: projectId,
+      name: m.name,
+      amount: Number(m.amount),
+      percentage: (Number(m.amount) / (contractValue || 1)) * 100, // Prevent div by 0
+      due_date: m.due_date || null,
+      sort_order: index,
+      status: m.status || 'pending',
+    }));
+
+    // Identify milestones to delete: those NOT in the new list AND NOT linked to payments
+    const incomingIds = new Set(milestonesToUpsert.map(m => m.id).filter(id => id));
+    
     const { error: deleteError } = await supabase
       .from('milestones')
       .delete()
       .eq('project_id', projectId)
-      .not('id', 'in', `(${Array.from(linkedMilestoneIds).join(',')})`);
+      .not('id', 'in', Array.from(incomingIds).length > 0 ? `(${Array.from(incomingIds).join(',')})` : '(NULL)')
+      .not('id', 'in', Array.from(linkedMilestoneIds).length > 0 ? `(${Array.from(linkedMilestoneIds).join(',')})` : '(NULL)');
 
     if (deleteError) {
       console.error('Delete error:', deleteError);
-      return NextResponse.json({ error: 'Failed to update schedule. Some milestones have recorded payments.' }, { status: 400 });
+      return NextResponse.json({ error: 'Failed to clear old milestones. Ensure no active payments are linked to deleted stages.' }, { status: 400 });
     }
 
-    // Insert new milestones
-    const { error: insertError } = await supabase
+    // Upsert the new list
+    const { error: upsertError } = await supabase
       .from('milestones')
-      .insert(milestonesToInsert as any);
+      .upsert(milestonesToUpsert as any);
 
-    if (insertError) throw insertError;
+    if (upsertError) {
+      console.error('Upsert error:', upsertError);
+      throw upsertError;
+    }
 
     return NextResponse.json({ message: 'Schedule updated successfully' });
   } catch (error) {

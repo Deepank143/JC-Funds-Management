@@ -38,12 +38,11 @@ export async function GET() {
       });
     }
 
-    // 2. Overdue Expenses (Unpaid expenses older than 30 days)
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
     const { data: overdueExpenses, error: expensesError } = await supabase
       .from('expenses')
       .select('id, amount, amount_paid, expense_date, projects(id, name), vendors(id, name)')
-      .eq('payment_status', 'unpaid')
+      .in('payment_status', ['unpaid', 'partial'])
       .lt('expense_date', thirtyDaysAgo);
 
     if (expensesError) throw expensesError;

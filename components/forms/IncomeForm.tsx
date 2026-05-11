@@ -146,7 +146,9 @@ export function IncomeForm() {
             <Select onValueChange={(value) => {
               setValue('milestone_id', value);
               const milestone = milestones?.find((m: any) => m.id === value);
-              if (milestone) {
+              const currentAmount = watch('amount');
+              // Only auto-fill if the amount is currently empty or 0 to avoid overwriting manual input
+              if (milestone && (!currentAmount || currentAmount === '0' || currentAmount === '')) {
                 setValue('amount', milestone.amount.toString());
               }
             }}>

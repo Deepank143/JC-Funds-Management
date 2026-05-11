@@ -18,7 +18,7 @@ export async function GET() {
       .eq('id', session.user.id)
       .single();
 
-    const isOwner = profile?.role === 'owner';
+    const isAuthorized = profile?.role === 'owner' || profile?.role === 'accountant';
 
     // Call the database function for consistent KPIs
     const { data: kpis, error: kpiError } = await (supabase as any).rpc('get_dashboard_kpis');
@@ -28,14 +28,14 @@ export async function GET() {
 
     // Filter sensitive data based on role
     return NextResponse.json({
-      totalReceivables: isOwner ? (summary.total_receivables || 0) : 0,
-      totalPayables: isOwner ? (summary.total_payables || 0) : 0,
-      netPosition: isOwner ? (summary.net_position || 0) : 0,
-      totalIncome: isOwner ? (summary.total_income || 0) : 0,
+      totalReceivables: isAuthorized ? (summary.total_receivables || 0) : 0,
+      totalPayables: isAuthorized ? (summary.total_payables || 0) : 0,
+      netPosition: isAuthorized ? (summary.net_position || 0) : 0,
+      totalIncome: isAuthorized ? (summary.total_income || 0) : 0,
       totalProjects: summary.total_projects || 0,
       activeProjects: summary.active_projects || 0,
-      overdueIncomeCount: isOwner ? (summary.overdue_income_count || 0) : 0,
-      overdueExpenseCount: isOwner ? (summary.overdue_expense_count || 0) : 0,
+      overdueIncomeCount: isAuthorized ? (summary.overdue_income_count || 0) : 0,
+      overdueExpenseCount: isAuthorized ? (summary.overdue_expense_count || 0) : 0,
     });
   } catch (error) {
     console.error('Dashboard summary error:', error);

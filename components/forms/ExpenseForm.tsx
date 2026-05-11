@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -35,6 +35,7 @@ const expenseSchema = z.object({
   payment_mode: z.string().optional(),
   reference_number: z.string().optional(),
   milestone_id: z.string().optional().nullable(),
+  amount_paid: z.string().optional(),
   notes: z.string().optional(),
 });
 
@@ -65,6 +66,11 @@ export function ExpenseForm() {
   const selectedCategory = watch('category_id');
   const selectedProject = watch('project_id');
   const currentStatus = watch('payment_status');
+
+  // Reset milestone when project changes to prevent cross-project linking
+  useEffect(() => {
+    setValue('milestone_id', null);
+  }, [selectedProject, setValue]);
 
   const { data: projects } = useQuery<Project[]>({
     queryKey: ['projects'],
@@ -147,7 +153,8 @@ export function ExpenseForm() {
       if (file) {
         setIsUploading(true);
         const fileExt = file.name.split('.').pop();
-        const fileName = `${Math.random()}.${fileExt}`;
+        // Use timestamp and random string to prevent naming collisions
+        const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
         const filePath = `${fileName}`;
 
         const { error: uploadError } = await supabase.storage
@@ -164,7 +171,11 @@ export function ExpenseForm() {
         setIsUploading(false);
       }
 
-      mutation.mutate({ ...data, receipt_url: receipt_url || undefined });
+      mutation.mutate({ 
+        ...data, 
+        receipt_url: receipt_url || undefined,
+        amount_paid: data.payment_status === 'paid' ? data.amount : data.amount_paid
+      });
     } catch (error) {
       setIsUploading(false);
       console.error('Upload error:', error);
@@ -351,30 +362,47 @@ export function ExpenseForm() {
             </Select>
           </div>
 
-          {watch('payment_status') === 'paid' && (
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="payment_mode">Payment Mode</Label>
-                <Select onValueChange={(value) => setValue('payment_mode', value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select mode" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="cash">Cash</SelectItem>
-                    <SelectItem value="upi">UPI</SelectItem>
-                    <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
-                    <SelectItem value="cheque">Cheque</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+          {(watch('payment_status') === 'paid' || watch('payment_status') === 'partial') && (
+            <div className="space-y-4">
+              {watch('payment_status') === 'partial' && (
+                <div className="space-y-2">
+                  <Label htmlFor="amount_paid">Amount Actually Paid (₹) *</Label>
+                  <Input
+                    id="amount_paid"
+                    type="number"
+                    placeholder="e.g. 5000"
+                    {...register('amount_paid')}
+                  />
+                  {errors.amount_paid && (
+                    <p className="text-sm text-red-500">{errors.amount_paid.message}</p>
+                  )}
+                </div>
+              )}
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="payment_mode">Payment Mode</Label>
+                  <Select onValueChange={(value) => setValue('payment_mode', value)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select mode" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="cash">Cash</SelectItem>
+                      <SelectItem value="upi">UPI</SelectItem>
+                      <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
+                      <SelectItem value="cheque">Cheque</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="reference_number">Reference Number</Label>
-                <Input
-                  id="reference_number"
-                  placeholder="UTR / Cheque"
-                  {...register('reference_number')}
-                />
+                <div className="space-y-2">
+                  <Label htmlFor="reference_number">Reference Number</Label>
+                  <Input
+                    id="reference_number"
+                    placeholder="UTR / Cheque"
+                    {...register('reference_number')}
+                  />
+                </div>
               </div>
             </div>
           )}

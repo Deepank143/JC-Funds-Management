@@ -96,6 +96,18 @@ export function ProjectForm() {
 
 
   const onSubmit = (data: ProjectFormData) => {
+    // Validation: Ensure milestone percentages sum to 100%
+    if (data.milestones && data.milestones.length > 0) {
+      const totalPercent = data.milestones.reduce((sum, m) => sum + Number(m.percentage), 0);
+      if (Math.abs(totalPercent - 100) > 0.01) { // Use epsilon for float comparison
+        toast({ 
+          title: 'Validation Error', 
+          description: `Total milestone percentage must be exactly 100%. Current total: ${totalPercent}%`, 
+          variant: 'destructive' 
+        });
+        return;
+      }
+    }
     mutation.mutate(data);
   };
 

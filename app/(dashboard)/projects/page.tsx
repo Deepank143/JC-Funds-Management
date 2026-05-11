@@ -20,6 +20,8 @@ interface Project {
   start_date: string | null;
   expected_end_date: string | null;
   clients: { name: string } | null;
+  total_income: number;
+  total_expenses: number;
   milestones: Array<{ status: string; amount: number }>;
 }
 
@@ -102,9 +104,7 @@ export default function ProjectsPage() {
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {projects.map((project) => {
-            const received = project.milestones
-              ?.filter(m => m.status === 'paid')
-              .reduce((sum, m) => sum + (m.amount || 0), 0) || 0;
+            const received = project.total_income || 0;
             const progress = project.contract_value > 0 
               ? (received / project.contract_value) * 100 
               : 0;

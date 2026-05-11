@@ -36,7 +36,8 @@ export function ProjectGrid() {
     queryFn: fetchProjects,
   });
 
-  const { isAdminMode } = useAdmin();
+  const { isAdminMode, userRole } = useAdmin();
+  const showData = isAdminMode || userRole === 'accountant';
 
   if (isLoading) {
     return (
@@ -103,7 +104,7 @@ export function ProjectGrid() {
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-muted-foreground">Contract Value</span>
                   <span className="font-semibold">
-                    {!isAdminMode ? (
+                    {!showData ? (
                       <span className="text-muted-foreground/30 font-mono tracking-tighter">••••••</span>
                     ) : (
                       formatINR(project.contract_value)
@@ -111,7 +112,7 @@ export function ProjectGrid() {
                   </span>
                 </div>
                 
-                {isAdminMode && (
+                {showData && (
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-muted-foreground">Profit Margin</span>
                     <Badge className={`${marginColor} border-0`}>
@@ -126,7 +127,7 @@ export function ProjectGrid() {
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Received</span>
                   <span className="font-medium text-emerald-600">
-                    {!isAdminMode ? (
+                    {!showData ? (
                       <span className="text-muted-foreground/30 font-mono tracking-tighter">••••••</span>
                     ) : (
                       formatINR(receivedAmount)
@@ -136,14 +137,14 @@ export function ProjectGrid() {
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Pending</span>
                   <span className="font-medium text-amber-600">
-                    {!isAdminMode ? (
+                    {!showData ? (
                       <span className="text-muted-foreground/30 font-mono tracking-tighter">••••••</span>
                     ) : (
                       formatINR(project.contract_value - receivedAmount)
                     )}
                   </span>
                 </div>
-                {isAdminMode && <Progress value={progress} className="h-2" />}
+                {showData && <Progress value={progress} className="h-2" />}
               </div>
 
               {/* Location */}

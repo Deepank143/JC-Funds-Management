@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AlertCircle, AlertTriangle, Clock, CheckCircle2 } from 'lucide-react';
-import { formatINR, formatDate, daysBetween } from '@/lib/utils';
+import { formatINR, formatDate, daysBetween, getRelativeTime } from '@/lib/utils';
 
 interface Alert {
   id: string;
@@ -117,7 +117,7 @@ export function AlertFeed() {
               )}
             </div>
             <span className="text-xs whitespace-nowrap opacity-75">
-              {daysBetween(alert.date, new Date())}d ago
+              {getRelativeTime(alert.date)}
             </span>
           </div>
         ))}

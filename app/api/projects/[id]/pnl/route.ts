@@ -48,9 +48,9 @@ export async function GET(
       if (!acc[catName]) {
         acc[catName] = { total: 0, paid: 0, unpaid: 0, items: [] };
       }
-      acc[catName].total += (exp.amount || 0);
-      acc[catName].paid += (exp.amount_paid || 0);
-      acc[catName].unpaid += (exp.amount || 0) - (exp.amount_paid || 0);
+      acc[catName].total = Math.round((acc[catName].total + (exp.amount || 0)) * 100) / 100;
+      acc[catName].paid = Math.round((acc[catName].paid + (exp.amount_paid || 0)) * 100) / 100;
+      acc[catName].unpaid = Math.round((acc[catName].total - acc[catName].paid) * 100) / 100;
       acc[catName].items.push({
         subcategory: exp.expense_subcategories?.name,
         vendor: exp.vendors?.name,
@@ -61,7 +61,15 @@ export async function GET(
     }, {});
 
     return NextResponse.json({
-      summary: summary?.[0] || {},
+      summary: summary?.[0] || {
+        total_contract_value: 0,
+        total_income: 0,
+        total_expenses: 0,
+        pending_income: 0,
+        outstanding_expenses: 0,
+        net_profit: 0,
+        profit_margin: 0
+      },
       income: income || [],
       expenses: expenses || [],
       category_breakdown: categoryBreakdown,

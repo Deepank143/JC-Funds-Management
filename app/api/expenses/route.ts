@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { getServerClient } from '@/lib/supabase';
+import { checkRole } from '@/lib/auth-utils';
 
 // GET /api/expenses - List expenses with filters
 export async function GET(request: Request) {
@@ -51,6 +52,12 @@ export async function POST(request: Request) {
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const body = await request.json();
+
+    // Security check: Only owners and accountants can mark an expense as 'paid'
+    if (body.payment_status === 'paid' || (body.amount_paid && body.amount_paid > 0)) {
+      const { error: roleError } = await checkRole(['owner', 'accountant']);
+      if (roleError) return roleError;
+    }
 
     const { data, error } = await supabase
       .from('expenses')

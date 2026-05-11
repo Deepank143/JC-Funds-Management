@@ -88,7 +88,7 @@ export async function POST(request: Request) {
         project_id: project.id,
         name: m.name,
         percentage: m.percentage,
-        amount: (body.contract_value * m.percentage) / 100,
+        amount: Math.round(((body.contract_value * m.percentage) / 100) * 100) / 100,
         due_date: m.due_date,
         sort_order: index,
       }));

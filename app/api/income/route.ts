@@ -48,60 +48,29 @@ export async function POST(request: Request) {
 
     const body = await request.json();
 
-    const { data, error: insertError } = await supabase
-      .from('income')
-      .insert({
-        project_id: body.project_id,
-        client_id: body.client_id,
-        milestone_id: body.milestone_id,
-        amount: body.amount,
-        payment_date: body.payment_date,
-        payment_mode: body.payment_mode || 'bank_transfer',
-        reference_number: body.reference_number,
-        notes: body.notes,
-        created_by: session.user.id,
-      } as any)
-      .select()
-      .single();
+    // Use atomic RPC to handle income insert and milestone status update in one transaction
+    const { data, error: rpcError } = await supabase.rpc('record_income_with_milestone_update', {
+      p_project_id: body.project_id,
+      p_client_id: body.client_id,
+      p_milestone_id: body.milestone_id,
+      p_amount: body.amount,
+      p_payment_date: body.payment_date,
+      p_payment_mode: body.payment_mode || 'bank_transfer',
+      p_reference_number: body.reference_number,
+      p_notes: body.notes,
+      p_created_by: session.user.id,
+    });
 
-    if (insertError) throw insertError;
-
-    // Update milestone status if milestone_id provided
-    if (body.milestone_id) {
-      // Get current milestone and total income for it to check if it's fully paid
-      const { data: milestone } = await supabase
-        .from('milestones')
-        .select('amount')
-        .eq('id', body.milestone_id)
-        .single();
-      
-      const { data: totalIncome } = await supabase
-        .from('income')
-        .select('amount')
-        .eq('milestone_id', body.milestone_id);
-      
-      const received = (totalIncome || []).reduce((sum: number, inc: any) => sum + Number(inc.amount), 0) + Number(body.amount);
-      
-      // Only mark as paid if the total received amount is >= milestone amount
-      if (milestone && received >= Number(milestone.amount)) {
-        await supabase
-          .from('milestones')
-          .update({ status: 'paid' } as any)
-          .eq('id', body.milestone_id);
-      } else {
-        // Otherwise keep it as 'billed' or 'pending' - for now we use 'billed' as it indicates payment started
-        await supabase
-          .from('milestones')
-          .update({ status: 'billed' } as any)
-          .eq('id', body.milestone_id);
-      }
+    if (rpcError) {
+      console.error('RPC Error:', rpcError);
+      throw new Error(rpcError.message || 'Failed to record income');
     }
 
     return NextResponse.json(data, { status: 201 });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Income creation error:', error);
     return NextResponse.json(
-      { error: 'Failed to record income' },
+      { error: error.message || 'Failed to record income' },
       { status: 500 }
     );
   }

@@ -11,25 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatINR } from '@/lib/utils';
 import { Search, Building2, Phone, Mail, MapPin, ArrowRight } from 'lucide-react';
-
-interface Client {
-  id: string;
-  name: string;
-  contact_person: string | null;
-  phone: string | null;
-  email: string | null;
-  address: string | null;
-  total_projects: number;
-  active_projects: number;
-  total_contract_value: number;
-}
-
-async function fetchClients(search?: string): Promise<Client[]> {
-  const url = search ? `/api/clients?search=${encodeURIComponent(search)}` : '/api/clients';
-  const res = await fetch(url);
-  if (!res.ok) throw new Error('Failed to fetch clients');
-  return res.json();
-}
+import { financeService } from '@/lib/services/financeService';
 
 export default function ClientsPage() {
   const router = useRouter();
@@ -37,7 +19,7 @@ export default function ClientsPage() {
 
   const { data: clients, isLoading } = useQuery({
     queryKey: ['clients', search],
-    queryFn: () => fetchClients(search),
+    queryFn: () => financeService.getClients(search),
   });
 
   return (

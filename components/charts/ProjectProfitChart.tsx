@@ -1,7 +1,7 @@
 'use client';
 
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
-import { formatINR } from '@/lib/utils';
+import { formatINR, formatINRAdaptive } from '@/lib/utils';
 
 interface ChartData {
   category: string;
@@ -39,7 +39,7 @@ export function ProjectProfitChart({ data }: ProjectProfitChartProps) {
         />
         <YAxis 
           tick={{ fontSize: 12 }}
-          tickFormatter={(value) => `₹${(value / 100000).toFixed(1)}L`}
+          tickFormatter={(value) => formatINRAdaptive(value, true)}
         />
         <Tooltip content={<CustomTooltip />} />
         <Legend />

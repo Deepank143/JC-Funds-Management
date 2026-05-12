@@ -22,6 +22,8 @@ import { toast } from '@/hooks/use-toast';
 import { Plus, UploadCloud, Loader2 } from 'lucide-react';
 import { useAdmin } from '@/contexts/AdminContext';
 
+import { financeService } from '@/lib/services/financeService';
+
 const expenseSchema = z.object({
   project_id: z.string().uuid('Please select a project'),
   category_id: z.string().uuid('Please select a category'),
@@ -40,11 +42,6 @@ const expenseSchema = z.object({
 });
 
 type ExpenseFormData = z.infer<typeof expenseSchema>;
-
-interface Project { id: string; name: string; }
-interface Category { id: string; name: string; }
-interface SubCategory { id: string; name: string; category_id: string; }
-interface Vendor { id: string; name: string; type: string; }
 
 export function ExpenseForm() {
   const [open, setOpen] = useState(false);
@@ -72,39 +69,34 @@ export function ExpenseForm() {
     setValue('milestone_id', null);
   }, [selectedProject, setValue]);
 
-  const { data: projects } = useQuery<Project[]>({
-    queryKey: ['projects'],
-    queryFn: async () => (await fetch('/api/projects?status=active')).json(),
+  const { data: projects } = useQuery({
+    queryKey: ['projects', 'active'],
+    queryFn: () => financeService.getActiveProjects(),
   });
 
-  const { data: categories } = useQuery<Category[]>({
+  const { data: categories } = useQuery({
     queryKey: ['categories'],
-    queryFn: async () => (await fetch('/api/expenses/categories')).json(),
+    queryFn: () => financeService.getExpenseCategories(),
   });
 
-  const { data: subcategories } = useQuery<SubCategory[]>({
+  const { data: subcategories } = useQuery({
     queryKey: ['subcategories', selectedCategory],
-    queryFn: async () => {
-      if (!selectedCategory) return [];
-      return (await fetch(`/api/expenses/subcategories?category_id=${selectedCategory}`)).json();
-    },
+    queryFn: () => financeService.getExpenseSubcategories(selectedCategory),
     enabled: !!selectedCategory,
   });
   
-  const { data: projectMilestones } = useQuery<any[]>({
+  const { data: projectMilestones } = useQuery({
     queryKey: ['milestones', selectedProject],
     queryFn: async () => {
-      if (!selectedProject) return [];
-      const res = await fetch(`/api/projects/${selectedProject}`);
-      const project = await res.json();
+      const project = await financeService.getProjectDetail(selectedProject);
       return project.milestones || [];
     },
     enabled: !!selectedProject,
   });
 
-  const { data: vendors } = useQuery<Vendor[]>({
+  const { data: vendors } = useQuery({
     queryKey: ['vendors'],
-    queryFn: async () => (await fetch('/api/vendors')).json(),
+    queryFn: () => financeService.getVendors(),
   });
 
   const mutation = useMutation({
@@ -114,16 +106,10 @@ export function ExpenseForm() {
         throw new Error('Unauthorized: Only Admin can authorize payments.');
       }
 
-      const res = await fetch('/api/expenses', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...data,
-          amount: Number(data.amount),
-        }),
+      return financeService.createExpense({
+        ...data,
+        amount: Number(data.amount),
       });
-      if (!res.ok) throw new Error('Failed to create expense');
-      return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['expenses'] });

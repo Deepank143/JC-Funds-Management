@@ -16,16 +16,15 @@ import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { financeService } from '@/lib/services/financeService';
+import { Vendor } from '@/lib/types';
 
 export default function VendorsPage() {
   const { canWrite } = useAdmin();
 
   const { data: vendors, isLoading } = useQuery({
     queryKey: ['vendors'],
-    queryFn: async () => {
-      const res = await fetch('/api/vendors');
-      return res.json();
-    },
+    queryFn: () => financeService.getVendors(),
   });
 
   return (
@@ -47,7 +46,7 @@ export default function VendorsPage() {
         ) : !vendors?.length ? (
           <p className="text-center py-8 text-muted-foreground">No vendors found.</p>
         ) : (
-          vendors.map((vendor: any) => (
+          vendors.map((vendor: Vendor) => (
             <Card key={vendor.id} className="overflow-hidden">
               <CardContent className="p-4 space-y-3">
                 <div className="flex justify-between items-start">
@@ -107,7 +106,7 @@ export default function VendorsPage() {
                 </TableCell>
               </TableRow>
             ) : (
-              vendors.map((vendor: any) => (
+              vendors.map((vendor: Vendor) => (
                 <TableRow key={vendor.id}>
                   <TableCell className="font-medium">
                     {vendor.name}

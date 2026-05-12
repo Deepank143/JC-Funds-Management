@@ -15,6 +15,27 @@ export function formatINR(amount: number): string {
   }).format(amount);
 }
 
+/**
+ * Formats currency in a human-readable adaptive way (K, L, Cr)
+ * Useful for charts, mobile views, and large numbers.
+ */
+export function formatINRAdaptive(amount: number, withPrefix = true): string {
+  const prefix = withPrefix ? '₹' : '';
+  const absAmount = Math.abs(amount);
+  const sign = amount < 0 ? '-' : '';
+  
+  if (absAmount >= 10000000) { // 1 Crore
+    return `${sign}${prefix}${(absAmount / 10000000).toFixed(2)} Cr`;
+  }
+  if (absAmount >= 100000) { // 1 Lakh
+    return `${sign}${prefix}${(absAmount / 100000).toFixed(2)} L`;
+  }
+  if (absAmount >= 1000) { // 1 Thousand
+    return `${sign}${prefix}${(absAmount / 1000).toFixed(1)} K`;
+  }
+  return `${sign}${prefix}${absAmount.toFixed(0)}`;
+}
+
 // Format number in Indian format (lakhs/crores)
 export function formatIndianNumber(num: number): string {
   return new Intl.NumberFormat('en-IN').format(num);

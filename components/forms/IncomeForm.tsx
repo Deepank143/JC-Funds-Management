@@ -20,6 +20,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { toast } from '@/hooks/use-toast';
 import { Plus } from 'lucide-react';
 
+import { financeService } from '@/lib/services/financeService';
+
 const incomeSchema = z.object({
   project_id: z.string().uuid('Please select a project'),
   milestone_id: z.string().optional(),
@@ -50,21 +52,14 @@ export function IncomeForm() {
 
   // Fetch projects with their clients
   const { data: projects } = useQuery({
-    queryKey: ['projects'],
-    queryFn: async () => {
-      const res = await fetch('/api/projects?status=active');
-      return res.json();
-    },
+    queryKey: ['projects', 'active'],
+    queryFn: () => financeService.getActiveProjects(),
   });
 
   // Fetch milestones for selected project
   const { data: milestones } = useQuery({
     queryKey: ['milestones', selectedProject],
-    queryFn: async () => {
-      if (!selectedProject) return [];
-      const res = await fetch(`/api/milestones?project_id=${selectedProject}`);
-      return res.json();
-    },
+    queryFn: () => financeService.getMilestones(selectedProject),
     enabled: !!selectedProject,
   });
 
@@ -73,17 +68,11 @@ export function IncomeForm() {
       // Find client_id from selected project
       const project = projects?.find((p: any) => p.id === data.project_id);
       
-      const res = await fetch('/api/income', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...data,
-          client_id: project?.client_id,
-          amount: Number(data.amount),
-        }),
+      return financeService.createIncome({
+        ...data,
+        client_id: project?.client_id,
+        amount: Number(data.amount),
       });
-      if (!res.ok) throw new Error('Failed to record income');
-      return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['income'] });

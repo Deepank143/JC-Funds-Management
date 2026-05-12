@@ -22,27 +22,21 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { toast } from '@/hooks/use-toast';
 import { Card, CardContent } from '@/components/ui/card';
+import { financeService } from '@/lib/services/financeService';
+import { ExpenseRecord } from '@/lib/types';
 
-function SettleExpenseDialog({ expense }: { expense: any }) {
+function SettleExpenseDialog({ expense }: { expense: ExpenseRecord }) {
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState('bank_transfer');
   const [ref, setRef] = useState('');
   const queryClient = useQueryClient();
 
   const mutation = useMutation({
-    mutationFn: async () => {
-      const res = await fetch(`/api/expenses/${expense.id}/pay`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          amount: expense.amount,
-          payment_mode: mode,
-          reference_number: ref
-        }),
-      });
-      if (!res.ok) throw new Error('Failed to settle expense');
-      return res.json();
-    },
+    mutationFn: () => financeService.settleExpense(expense.id, {
+      amount: expense.amount,
+      payment_mode: mode,
+      reference_number: ref
+    }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['expenses'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard-kpis'] });
@@ -103,10 +97,7 @@ export default function ExpensesPage() {
 
   const { data: expenses, isLoading } = useQuery({
     queryKey: ['expenses'],
-    queryFn: async () => {
-      const res = await fetch('/api/expenses');
-      return res.json();
-    },
+    queryFn: () => financeService.getExpenses(),
   });
 
   return (
@@ -127,8 +118,8 @@ export default function ExpensesPage() {
           </div>
         ) : !expenses?.length ? (
           <p className="text-center py-8 text-muted-foreground">No records found.</p>
-        ) : (
-          expenses.map((expense: any) => (
+         ) : (
+          expenses.map((expense: ExpenseRecord) => (
             <Card key={expense.id} className="overflow-hidden">
               <CardContent className="p-4 space-y-3">
                 <div className="flex justify-between items-start">
@@ -206,7 +197,7 @@ export default function ExpensesPage() {
                 </TableCell>
               </TableRow>
             ) : (
-              expenses.map((expense: any) => (
+              expenses.map((expense: ExpenseRecord) => (
                 <TableRow key={expense.id}>
                   <TableCell>
                     {format(new Date(expense.expense_date), 'dd MMM yyyy')}

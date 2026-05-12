@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Header } from '@/components/layout/Header';
 import { Sidebar } from '@/components/layout/Sidebar';
+import { financeService } from '@/lib/services/financeService';
 
 export function DashboardLayoutClient({ children }: { children: React.ReactNode }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -11,11 +12,7 @@ export function DashboardLayoutClient({ children }: { children: React.ReactNode 
   // Fetch KPI data to get overdue count for sidebar
   const { data: kpis } = useQuery({
     queryKey: ['dashboard-kpis'],
-    queryFn: async () => {
-      const res = await fetch('/api/dashboard/summary');
-      if (!res.ok) return null;
-      return res.json();
-    },
+    queryFn: () => financeService.getDashboardKPIs(),
     refetchInterval: 30000,
   });
 

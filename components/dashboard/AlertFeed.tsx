@@ -6,28 +6,12 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AlertCircle, AlertTriangle, Clock, CheckCircle2 } from 'lucide-react';
 import { formatINR, formatDate, daysBetween, getRelativeTime } from '@/lib/utils';
-
-interface Alert {
-  id: string;
-  type: 'overdue_income' | 'overdue_expense' | 'budget_warning' | 'milestone_due';
-  title: string;
-  description: string;
-  amount?: number;
-  date: string;
-  project_name?: string;
-  severity: 'high' | 'medium' | 'low';
-}
-
-async function fetchAlerts(): Promise<Alert[]> {
-  const res = await fetch('/api/dashboard/alerts');
-  if (!res.ok) throw new Error('Failed to fetch alerts');
-  return res.json();
-}
+import { financeService } from '@/lib/services/financeService';
 
 export function AlertFeed() {
   const { data: alerts, isLoading } = useQuery({
     queryKey: ['dashboard-alerts'],
-    queryFn: fetchAlerts,
+    queryFn: () => financeService.getDashboardAlerts(),
     refetchInterval: 60000, // Refresh every minute
   });
 

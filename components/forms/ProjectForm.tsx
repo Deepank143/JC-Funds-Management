@@ -14,6 +14,8 @@ import { toast } from '@/hooks/use-toast';
 import { Plus, Loader2, Trash2 } from 'lucide-react';
 import { formatINR } from '@/lib/utils';
 
+import { financeService } from '@/lib/services/financeService';
+
 const milestoneSchema = z.object({
   name: z.string().min(1, 'Milestone name required'),
   percentage: z.string().refine((val) => !isNaN(Number(val)) && Number(val) > 0 && Number(val) <= 100, {
@@ -37,11 +39,6 @@ const projectSchema = z.object({
 
 type ProjectFormData = z.infer<typeof projectSchema>;
 
-interface Client {
-  id: string;
-  name: string;
-}
-
 export function ProjectForm() {
   const [open, setOpen] = useState(false);
   const queryClient = useQueryClient();
@@ -56,31 +53,22 @@ export function ProjectForm() {
   const milestones = watch('milestones') || [];
   const contractValue = Number(watch('contract_value')) || 0;
 
-  const { data: clients } = useQuery<Client[]>({
+  const { data: clients } = useQuery({
     queryKey: ['clients'],
-    queryFn: async () => {
-      const res = await fetch('/api/clients');
-      return res.json();
-    },
+    queryFn: () => financeService.getClients(),
   });
 
   const mutation = useMutation({
     mutationFn: async (data: ProjectFormData) => {
-      const res = await fetch('/api/projects', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...data,
-          contract_value: Number(data.contract_value),
-          milestones: (data.milestones || []).map((m, i) => ({
-            ...m,
-            percentage: Number(m.percentage),
-            sort_order: i,
-          })),
-        }),
+      return financeService.createProject({
+        ...data,
+        contract_value: Number(data.contract_value),
+        milestones: (data.milestones || []).map((m, i) => ({
+          ...m,
+          percentage: Number(m.percentage),
+          sort_order: i,
+        })),
       });
-      if (!res.ok) throw new Error('Failed to create project');
-      return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['projects'] });

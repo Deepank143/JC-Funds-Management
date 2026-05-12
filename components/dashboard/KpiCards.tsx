@@ -6,28 +6,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatINR } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAdmin } from '@/contexts/AdminContext';
-
-interface DashboardKPIs {
-  totalReceivables: number;
-  totalPayables: number;
-  netPosition: number;
-  totalPaid: number;
-  totalProjects: number;
-  activeProjects: number;
-  overdueIncomeCount: number;
-  overdueExpenseCount: number;
-}
-
-async function fetchDashboardKPIs(): Promise<DashboardKPIs> {
-  const res = await fetch('/api/dashboard/summary');
-  if (!res.ok) throw new Error('Failed to fetch dashboard data');
-  return res.json();
-}
+import { financeService } from '@/lib/services/financeService';
 
 export function KpiCards() {
   const { data, isLoading } = useQuery({
     queryKey: ['dashboard-kpis'],
-    queryFn: fetchDashboardKPIs,
+    queryFn: () => financeService.getDashboardKPIs(),
     refetchInterval: 30000, // Refetch every 30 seconds
   });
 

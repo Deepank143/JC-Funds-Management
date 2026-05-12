@@ -10,27 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatINR, getProfitColor } from '@/lib/utils';
 import { Building2, MapPin, Calendar, ArrowRight, IndianRupee } from 'lucide-react';
-
-interface Project {
-  id: string;
-  name: string;
-  location: string | null;
-  contract_value: number;
-  status: string;
-  start_date: string | null;
-  expected_end_date: string | null;
-  clients: { name: string } | null;
-  total_income: number;
-  total_expenses: number;
-  milestones: Array<{ status: string; amount: number }>;
-}
-
-async function fetchProjects(status?: string): Promise<Project[]> {
-  const url = status ? `/api/projects?status=${status}` : '/api/projects';
-  const res = await fetch(url);
-  if (!res.ok) throw new Error('Failed to fetch projects');
-  return res.json();
-}
+import { financeService } from '@/lib/services/financeService';
 
 export default function ProjectsPage() {
   const router = useRouter();
@@ -38,7 +18,7 @@ export default function ProjectsPage() {
 
   const { data: projects, isLoading } = useQuery({
     queryKey: ['projects', filter],
-    queryFn: () => fetchProjects(filter === 'all' ? undefined : filter),
+    queryFn: () => financeService.getProjects(filter === 'all' ? undefined : filter),
   });
 
   const filters = [
@@ -119,7 +99,7 @@ export default function ProjectsPage() {
                   <div className="flex items-start justify-between">
                     <div>
                       <CardTitle className="text-lg">{project.name}</CardTitle>
-                      <p className="text-sm text-muted-foreground">{project.clients?.name}</p>
+                      <p className="text-sm text-muted-foreground">{project.client_name}</p>
                     </div>
                     <Badge variant={project.status === 'active' ? 'default' : 'secondary'}>
                       {project.status}

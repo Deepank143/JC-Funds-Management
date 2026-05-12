@@ -20,60 +20,92 @@ interface AdminContextType {
   canManageFunds: boolean;
   /** Loading state while fetching profile */
   isLoading: boolean;
+  /** Logged in user's display name */
+  userName: string;
+  /** Logged in user's email */
+  userEmail: string;
 }
 
-const AdminContext = createContext<AdminContextType>({
-  userRole: 'viewer',
-  isAdminMode: false,
-  toggleAdminMode: () => {},
-  isOwner: false,
-  canWrite: false,
-  canManageFunds: false,
-  isLoading: true,
-});
+const AdminContext = createContext<AdminContextType | undefined>(undefined);
 
 export function AdminProvider({ children }: { children: ReactNode }) {
   const supabase = createClientComponentClient();
   const [userRole, setUserRole] = useState<UserRole>('viewer');
   const [isAdminMode, setIsAdminMode] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [userName, setUserName] = useState('User');
+  const [userEmail, setUserEmail] = useState('');
+
+  const fetchProfile = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) {
+        setIsLoading(false);
+        setUserRole('viewer');
+        setUserName('User');
+        setUserEmail('');
+        return;
+      }
+
+      // Set user metadata from session
+      setUserEmail(session.user.email || '');
+      const fullName = session.user.user_metadata?.full_name;
+      setUserName(fullName || session.user.email?.split('@')[0] || 'User');
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', session.user.id)
+        .single();
+
+      if (profile?.role) {
+        const role = profile.role as UserRole;
+        setUserRole(role);
+        
+        // Auto-enable or restore admin mode for owner
+        if (role === 'owner') {
+          const savedMode = typeof window !== 'undefined' ? sessionStorage.getItem('adminMode') : null;
+          setIsAdminMode(savedMode === null ? true : savedMode === 'on');
+        } else {
+          setIsAdminMode(false);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch profile:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session?.user) {
-          setIsLoading(false);
-          return;
-        }
-
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', session.user.id)
-          .single();
-
-        if (profile?.role) {
-          setUserRole(profile.role as UserRole);
-          // Auto-enable admin mode for owner on login
-          if (profile.role === 'owner') {
-            setIsAdminMode(true);
-          }
-        }
-      } catch (error) {
-        console.error('Failed to fetch profile:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     fetchProfile();
+
+    // Real-time RBAC via auth state change
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        fetchProfile();
+      } else if (event === 'SIGNED_OUT') {
+        setUserRole('viewer');
+        setIsAdminMode(false);
+        setUserName('User');
+        setUserEmail('');
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   const toggleAdminMode = () => {
-    // Only owners can toggle admin mode
     if (userRole === 'owner') {
-      setIsAdminMode((prev) => !prev);
+      setIsAdminMode((prev) => {
+        const next = !prev;
+        if (typeof window !== 'undefined') {
+          sessionStorage.setItem('adminMode', next ? 'on' : 'off');
+        }
+        return next;
+      });
     }
   };
 
@@ -91,6 +123,8 @@ export function AdminProvider({ children }: { children: ReactNode }) {
         canWrite,
         canManageFunds,
         isLoading,
+        userName,
+        userEmail,
       }}
     >
       {children}

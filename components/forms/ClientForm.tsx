@@ -13,6 +13,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { toast } from '@/hooks/use-toast';
 import { Plus, Loader2 } from 'lucide-react';
 
+import { financeService } from '@/lib/services/financeService';
+
 const clientSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
   contact_person: z.string().optional(),
@@ -68,21 +70,9 @@ export function ClientForm({ client, onSuccess }: ClientFormProps) {
   const mutation = useMutation({
     mutationFn: async (data: ClientFormData) => {
       if (isEditing) {
-        const res = await fetch(`/api/clients/${client.id}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data),
-        });
-        if (!res.ok) throw new Error('Failed to update client');
-        return res.json();
+        return financeService.updateClient(client.id, data);
       } else {
-        const res = await fetch('/api/clients', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data),
-        });
-        if (!res.ok) throw new Error('Failed to create client');
-        return res.json();
+        return financeService.createClient(data);
       }
     },
     onSuccess: () => {

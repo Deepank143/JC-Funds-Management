@@ -15,6 +15,8 @@ import { toast } from '@/hooks/use-toast';
 import { Plus, Trash2, Loader2, Calculator, Info } from 'lucide-react';
 import { formatINR } from '@/lib/utils';
 
+import { financeService } from '@/lib/services/financeService';
+
 const milestoneSchema = z.object({
   name: z.string().min(1, 'Name required'),
   amount: z.string().refine((val) => !isNaN(Number(val)) && Number(val) > 0, {
@@ -39,7 +41,7 @@ export function MilestoneManager({ projectId, contractValue, existingMilestones 
   const [open, setOpen] = useState(false);
   const queryClient = useQueryClient();
 
-  const { register, control, handleSubmit, watch, formState: { errors } } = useForm<ScheduleFormData>({
+  const { register, control, handleSubmit, watch, setValue, formState: { errors } } = useForm<ScheduleFormData>({
     resolver: zodResolver(scheduleSchema),
     defaultValues: {
       milestones: existingMilestones.length > 0 
@@ -62,22 +64,32 @@ export function MilestoneManager({ projectId, contractValue, existingMilestones 
   const remaining = contractValue - totalAllocated;
   const isBalanced = Math.abs(remaining) < 0.01;
 
+  const handleAutoBalance = () => {
+    if (fields.length === 0) return;
+    const lastIndex = fields.length - 1;
+    const currentLastAmount = Number(watchedMilestones[lastIndex].amount) || 0;
+    const newAmount = Math.max(0, currentLastAmount + remaining);
+    setValue(`milestones.${lastIndex}.amount`, newAmount.toString());
+    toast({ 
+      title: 'Auto-Balanced', 
+      description: `Added ₹${remaining.toLocaleString()} to the last milestone.` 
+    });
+  };
+
+  const handleSplitEqually = () => {
+    const splitAmount = (contractValue / fields.length).toFixed(2);
+    fields.forEach((_, index) => {
+      setValue(`milestones.${index}.amount`, splitAmount);
+    });
+    toast({ 
+      title: 'Split Equally', 
+      description: `Divided ${formatINR(contractValue)} into ${fields.length} equal parts.` 
+    });
+  };
+
   const mutation = useMutation({
-    mutationFn: async (data: ScheduleFormData) => {
-      const res = await fetch(`/api/projects/${projectId}/milestones`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          milestones: data.milestones,
-          contractValue
-        }),
-      });
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.error || 'Failed to update schedule');
-      }
-      return res.json();
-    },
+    mutationFn: (data: ScheduleFormData) => 
+      financeService.updateMilestones(projectId, data.milestones, contractValue),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['project', projectId] });
       queryClient.invalidateQueries({ queryKey: ['project-pnl', projectId] });
@@ -112,9 +124,19 @@ export function MilestoneManager({ projectId, contractValue, existingMilestones 
       <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Manage Payment Schedule</DialogTitle>
-          <p className="text-sm text-muted-foreground">
-            Define 4 to 20 milestones. Total must equal {formatINR(contractValue)}.
-          </p>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <p className="text-sm text-muted-foreground">
+              Define 4 to 20 milestones. Total must equal {formatINR(contractValue)}.
+            </p>
+            <div className="flex gap-2">
+              <Button type="button" variant="ghost" size="sm" className="h-7 text-[10px] uppercase font-bold text-primary" onClick={handleSplitEqually}>
+                Split Equally
+              </Button>
+              <Button type="button" variant="ghost" size="sm" className="h-7 text-[10px] uppercase font-bold text-emerald-600" onClick={handleAutoBalance} disabled={isBalanced}>
+                Auto-Balance
+              </Button>
+            </div>
+          </div>
         </DialogHeader>
 
         <div className="bg-muted/50 p-4 rounded-lg flex flex-col sm:flex-row items-center justify-between gap-4 mb-4">
@@ -129,8 +151,8 @@ export function MilestoneManager({ projectId, contractValue, existingMilestones 
           </div>
           <div className="text-right">
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Remaining</p>
-            <p className={`text-lg font-bold ${remaining === 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-              {remaining > 0 ? `+${formatINR(remaining)}` : formatINR(remaining)}
+            <p className={`text-lg font-bold ${isBalanced ? 'text-emerald-600' : 'text-red-600'}`}>
+              {remaining > 0 ? `+${formatINR(remaining)}` : remaining < 0 ? formatINR(remaining) : 'Balanced'}
             </p>
           </div>
         </div>

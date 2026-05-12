@@ -16,16 +16,15 @@ import { format } from 'date-fns';
 import { Loader2, TrendingUp, Building, CreditCard } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
+import { financeService } from '@/lib/services/financeService';
+import { IncomeRecord } from '@/lib/types';
 
 export default function IncomePage() {
   const { canWrite } = useAdmin();
 
   const { data: income, isLoading } = useQuery({
     queryKey: ['income'],
-    queryFn: async () => {
-      const res = await fetch('/api/income');
-      return res.json();
-    },
+    queryFn: () => financeService.getIncomeHistory(),
   });
 
   return (
@@ -47,7 +46,7 @@ export default function IncomePage() {
         ) : !income?.length ? (
           <p className="text-center py-8 text-muted-foreground">No records found.</p>
         ) : (
-          income.map((record: any) => (
+          income.map((record: IncomeRecord) => (
             <Card key={record.id} className="overflow-hidden border-l-4 border-l-emerald-500">
               <CardContent className="p-4 space-y-3">
                 <div className="flex justify-between items-start">
@@ -123,7 +122,7 @@ export default function IncomePage() {
                 </TableCell>
               </TableRow>
             ) : (
-              income.map((record: any) => (
+              income.map((record: IncomeRecord) => (
                 <TableRow key={record.id}>
                   <TableCell>
                     {format(new Date(record.payment_date), 'dd MMM yyyy')}

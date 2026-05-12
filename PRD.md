@@ -2,11 +2,11 @@
 
 ## Apex Buildcon — Funds Management System
 
-**Version:** 1.0  
+**Version:** 1.1 (Internal QoL Release)  
 **Date:** May 2026  
 **Prepared for:** Harsh Jani, Owner — Apex Buildcon  
-**Tech Stack:** React (Next.js) · Node.js · Python · Supabase · Vercel  
-**Author:** Freelance Developer
+**Tech Stack:** Next.js 14 · Supabase · Vercel · TanStack Query
+**Context:** Internal productivity tool for 2-3 key personnel.
 
 ---
 
@@ -24,35 +24,26 @@
 10. [Success Metrics](#10-success-metrics)
 11. [Future Enhancements](#11-future-enhancements)
 
+### New Modules (v1.2)
+- [Module H: Milestone Intelligence Engine](#module-h-milestone-intelligence-engine)
+- [Module I: Back Entry & Financial Amendment System](#module-i-back-entry--financial-amendment-system)
+
 ---
 
-## 1. Executive Summary
-
-A robust, mobile-first funds tracking and project profitability dashboard for a construction consultancy agency. The system enables real-time tracking of client receivables, project-wise expenses across three major categories (Vendors, Raw Material, Labour/Broker), and net working capital position across all active projects.
+A high-precision, mobile-first financial dashboard designed to simplify project accounting for Apex Buildcon. This internal tool replaces manual spreadsheets with a unified system for tracking client receivables, project expenses, and net liquidity—optimized for a small team of 2-3 users.
 
 ### Business Context
 Construction agencies in India operate on negative cash flow cycles: labour is paid weekly, vendors on delivery, but clients pay 30–90 days after billing. The app must make this tension visible instantly. Harsh Jani manages 3–8 simultaneous projects and needs to know at a glance whether he can commit to a new vendor order or must chase a client payment first.
 
 ---
 
-## 2. User Personas
+### 2. User Personas
 
-### Primary: Harsh Jani (Owner / Operator)
+#### Primary: Harsh Jani (Owner / Operator)
+The principal user who requires instant financial clarity. Uses the system to chase client payments, approve vendor payouts, and monitor project margins from his Mobile or Desktop device.
 
-| Attribute | Detail |
-|-----------|--------|
-| **Role** | Business owner managing 3–8 simultaneous construction projects |
-| **Location** | Gujarat, India |
-| **Tech Comfort** | Moderate — uses smartphones, UPI apps, WhatsApp Business |
-| **Goals** | Know instantly which client owes money and for how long; track per-project profitability before it's too late to course-correct; pay labour and vendors on time without overextending cash reserves |
-| **Pain Points** | Mixing up client payments across projects; losing track of small raw material purchases; not knowing true project profit until after handover |
-
-### Secondary: Site Supervisor / Accountant (Future)
-
-| Attribute | Detail |
-|-----------|--------|
-| **Role** | Data entry for daily labour attendance and vendor bills |
-| **Needs** | Simple mobile interface for quick entries |
+#### Secondary: Accountant / Site Admin
+Small internal team (1-2 people) responsible for manual data entry of daily vendor bills, labour wages, and incoming client checks.
 
 ---
 
@@ -399,118 +390,25 @@ $$ language plpgsql;
 
 ---
 
-## 5. API Architecture
+### 5. API Architecture
 
-### 5.1 Service Layer Structure
-
-```
-/backend
-├── /src
-│   ├── /config          # Supabase client, env vars
-│   ├── /middleware      # Auth middleware (verify Supabase JWT)
-│   ├── /routes
-│   │   ├── auth.js
-│   │   ├── clients.js
-│   │   ├── projects.js
-│   │   ├── income.js
-│   │   ├── expenses.js
-│   │   ├── vendors.js
-│   │   ├── dashboard.js
-│   │   └── reports.js
-│   ├── /controllers     # Business logic
-│   ├── /services        # Supabase queries
-│   └── /utils           # Helpers, validators
-├── package.json
-└── vercel.json
-```
-
-### 5.2 API Endpoints
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/dashboard/summary` | KPIs: receivables, payables, net position, overdue count |
-| GET | `/api/dashboard/projects` | Project cards with profit margins |
-| GET | `/api/clients` | List all clients |
-| POST | `/api/clients` | Create client |
-| GET | `/api/clients/:id/statement` | Full statement PDF/JSON |
-| GET | `/api/projects` | List projects (filter by status) |
-| POST | `/api/projects` | Create project with milestones |
-| GET | `/api/projects/:id/pnl` | Project P&L breakdown |
-| POST | `/api/income` | Record client payment |
-| GET | `/api/income?project_id=` | Income history |
-| POST | `/api/expenses` | Record expense |
-| GET | `/api/expenses?project_id=&category=` | Expense list with filters |
-| PUT | `/api/expenses/:id/pay` | Mark expense as paid |
-| GET | `/api/vendors` | Vendor/labour list |
-| GET | `/api/vendors/:id/ledger` | Vendor statement |
-| GET | `/api/reports/project-pnl` | Export P&L (PDF/CSV) |
-
-### 5.3 Python Microservice
-
-**Role:** PDF Report Generation, Data Analytics, Image Processing
-
-**Stack:** FastAPI + ReportLab + Supabase Python Client
-
-**Integration:** Node.js API calls Python service via HTTP for PDF generation, or host Python as separate serverless functions.
-
-**Alternative for Phase 1:** Use `jspdf` + `autotable` in frontend to avoid Python backend complexity.
-
----
-
-## 6. Frontend Architecture
-
-### 6.1 Tech Choices
-
-| Layer | Choice | Rationale |
-|-------|--------|-----------|
-| Framework | Next.js 14 (App Router) | SSR for SEO, API routes, Vercel-native |
-| Styling | Tailwind CSS + shadcn/ui | Rapid UI, mobile-first, clean dashboards |
-| State | React Query (TanStack) | Server state caching, refetching |
-| Forms | React Hook Form + Zod | Validation, type safety |
-| Charts | Recharts | Lightweight, React-native |
-| Auth | Supabase Auth Helpers | Seamless integration |
-
-### 6.2 Page Structure
+#### 5.1 Evolution from "Scripting" to "Service Layer"
+To ensure financial precision for this internal tool, the architecture is transitioning from direct component-to-DB calls to a **Structured Service Layer**.
 
 ```
-/app
-├── /(auth)
-│   └── /login              # Login page
-├── /(dashboard)
-│   ├── /page.tsx           # Main dashboard (KPIs + project grid)
-│   ├── /layout.tsx         # Sidebar + header layout
-│   ├── /clients
-│   │   ├── /page.tsx       # Client list
-│   │   └── /[id]/page.tsx  # Client detail + projects
-│   ├── /projects
-│   │   ├── /page.tsx       # Project list
-│   │   └── /[id]/page.tsx  # Project P&L + expenses
-│   ├── /income
-│   │   └── /page.tsx       # Record/view income
-│   ├── /expenses
-│   │   └── /page.tsx       # Record/view expenses
-│   ├── /vendors
-│   │   ├── /page.tsx       # Vendor list
-│   │   └── /[id]/page.tsx  # Vendor ledger
-│   └── /reports
-│       └── /page.tsx       # Generate reports
-/components
-├── /ui                     # shadcn components
-├── /dashboard
-│   ├── KpiCards.tsx
-│   ├── ProjectGrid.tsx
-│   └── AlertFeed.tsx
-├── /forms
-│   ├── ClientForm.tsx
-│   ├── ProjectForm.tsx
-│   ├── IncomeForm.tsx
-│   └── ExpenseForm.tsx
-├── /charts
-│   └── ProjectProfitChart.tsx
 /lib
-├── /supabase               # Supabase client setup
-└── /utils                  # Formatters (INR currency, dates)
+├── /services        # Centralized business logic (The "Source of Truth")
+│   ├── projectService.ts   # P&L calculations, milestone logic
+│   ├── financeService.ts   # Income/Expense atomic operations
+│   └── authService.ts      # RBAC and session management
+├── /utils           # Financial formatters (INR, Date logic)
+└── /supabase        # DB client configuration
 ```
+
+#### 5.2 Technical Hardening Roadmap (Q2 2026)
+1. **Atomic Transactions**: Migration of multi-step operations (Income + Milestone Update) to PostgreSQL Functions (RPC) to prevent data desync.
+2. **Global Error Boundary**: Implementation of high-fidelity failure handling to protect the UI during network interruptions.
+3. **Adaptive UI**: Skeletons and transition states to maintain a premium "Desktop-class" feel on mobile devices.
 
 ### 6.3 Dashboard Layout
 
@@ -718,19 +616,34 @@ async def generate_pnl(project_id: str):
 
 ## 9. MVP Feature Priority
 
-| Priority | Feature | Timeline |
-|----------|---------|----------|
-| P0 | Auth + Dashboard KPIs | Week 1 |
-| P0 | Client + Project CRUD | Week 1-2 |
-| P0 | Income recording | Week 2 |
-| P0 | Expense recording (3 categories) | Week 2-3 |
-| P0 | Project P&L view | Week 3 |
-| P1 | Vendor/Labour ledger | Week 3-4 |
-| P1 | PDF reports export | Week 4 |
-| P1 | Alerts & overdue tracking | Week 4 |
-| P2 | Labour attendance | Week 5-6 |
-| P2 | Photo upload for bills | Week 5-6 |
-| P2 | Multi-user roles | Week 6 |
+### Phase 1 (Live — Completed)
+| Priority | Feature | Status |
+|----------|---------|--------|
+| P0 | Auth + Dashboard KPIs | ✅ Done |
+| P0 | Client + Project CRUD | ✅ Done |
+| P0 | Income recording | ✅ Done |
+| P0 | Expense recording (3 categories) | ✅ Done |
+| P0 | Project P&L view | ✅ Done |
+| P1 | Vendor / Labour ledger | ✅ Done |
+| P1 | PDF / CSV reports export | ✅ Done |
+| P1 | Alerts & overdue tracking | ✅ Done |
+| P1 | Global error boundary + loading states | ✅ Done |
+
+### Phase 2 (In Progress — Architectural Hardening)
+| Priority | Feature | Status |
+|----------|---------|--------|
+| P0 | Atomic Income + Milestone transaction (RPC) | 🔄 Planned |
+| P0 | Service Layer (`lib/services/`) consolidation | 🔄 Planned |
+| P1 | Adaptive currency formatting (K / L / Cr) | 🔄 Planned |
+| P1 | Auto-Balance in Milestone Manager | 🔄 Planned |
+
+### Phase 3 (New Owner Requests — v1.2)
+| Priority | Feature | Status |
+|----------|---------|--------|
+| P0 | **Module H**: Milestone Intelligence Engine | 📋 Spec Written |
+| P0 | **Module I**: Back Entry & Financial Amendment System | 📋 Spec Written |
+| P1 | Labour attendance | 📋 Backlog |
+| P1 | Photo upload for bills | 📋 Backlog |
 
 ---
 
@@ -741,6 +654,8 @@ async def generate_pnl(project_id: str):
 3. **Project profit margin accuracy** — within 2% of manual calculation
 4. **Zero data loss** — Supabase backups + RLS security
 5. **Uptime:** 99.9% via Vercel + Supabase managed infrastructure
+6. **Milestone suggestions accepted > 70% of the time** — the engine's defaults should match Harsh's typical project structure
+7. **Back entries correctable in < 2 minutes** — the amendment flow should feel like editing, not re-entry
 
 ---
 
@@ -756,6 +671,248 @@ async def generate_pnl(project_id: str):
 
 ---
 
+---
+
+## Module H: Milestone Intelligence Engine
+
+> **Owner Request:** "Suggest milestones based on running projects, notify urgency of completion by deadline, track what's been done, and help plan new milestones for incoming projects while tracking funds in real-time."
+
+### H.1 Overview
+
+The Milestone Intelligence Engine (MIE) is a context-aware assistant layer built on top of the existing milestone and income data. It does **not** replace manual entry — it enhances it. For an internal team of 2-3 users doing manual data entry, the MIE reduces cognitive load by pre-filling milestone schedules, surfacing urgency, and showing real-time financial health per milestone.
+
+### H.2 Feature Breakdown
+
+#### H.2.1 — Smart Milestone Suggestions (New Project Onboarding)
+
+When creating a new project, the system analyses **all completed and active projects** to suggest a milestone schedule.
+
+**Suggestion Logic (Rule-Based, No AI Required for v1):**
+- Pull all milestones grouped by project type/size (contract value bracket)
+- Calculate the median `percentage` and `name` per milestone position (1st, 2nd, 3rd…)
+- Pre-fill the `MilestoneManager` form with these suggestions as editable defaults
+
+**Suggested Milestone Templates (based on Harsh's construction context):**
+
+| Position | Suggested Name | Typical % |
+|----------|---------------|----------|
+| 1 | Advance | 10% |
+| 2 | Plinth Complete | 20% |
+| 3 | Slab Complete | 20% |
+| 4 | Brickwork & Plaster | 15% |
+| 5 | Finishing & Electrical | 25% |
+| 6 | Handover & Final Settlement | 10% |
+
+> These templates are editable per project. The system learns from deviations over time (Phase 2).
+
+#### H.2.2 — Urgency Notifications & Deadline Tracking
+
+For each active milestone across all projects, the system computes an **Urgency Score**:
+
+```
+Urgency = (Days to Due Date) × (% of contract value at stake)
+```
+
+| Urgency State | Condition | UI Treatment |
+|---|---|---|
+| 🔴 **Critical** | Due date passed, milestone unpaid | Red badge, top of Alert Feed |
+| 🟠 **Urgent** | Due in ≤ 7 days, not paid | Orange badge, Alert Feed |
+| 🟡 **Upcoming** | Due in 8–21 days | Yellow badge, Dashboard widget |
+| 🟢 **On Track** | Due > 21 days or fully paid | Green, normal display |
+
+**Surfaces:**
+- **Alert Feed** (sidebar): Lists all Critical + Urgent milestones across all projects
+- **Project Detail page**: Each milestone row colour-coded by urgency
+- **Dashboard KPI widget**: "X milestones due this week — ₹Y at stake"
+
+#### H.2.3 — Real-Time Fund Flow per Milestone
+
+Each milestone card on the Project Detail page shows a **live fund flow snapshot**:
+
+```
+┌───────────────────────────────────────────────┐
+│ Slab Complete          [🟠 Due in 5 days]      │
+│ Target: ₹ 6,40,000                             │
+│ Received: ₹ 3,20,000 (50%) ████░░░░            │
+│ Pending: ₹ 3,20,000                            │
+│ Expenses this stage: ₹ 2,10,000                │
+│ Net this stage: ₹ 1,10,000 profit so far       │
+└───────────────────────────────────────────────┘
+```
+
+This is computed from: `income WHERE milestone_id = X` and `expenses WHERE milestone_id = X` in real-time.
+
+#### H.2.4 — Multi-Project Planning View
+
+A new **"Planning" tab** on the Dashboard shows a timeline-style view:
+
+- All active projects on a horizontal axis (by start/end date)
+- Each project's pending milestones plotted as markers on the timeline
+- Colour-coded by urgency, sized by contract value
+- Answers: *"Which project needs my attention this week vs next month?"*
+
+### H.3 Data Requirements
+
+No new DB tables are required. The engine uses:
+- `milestones` (due_date, status, amount)
+- `income` (milestone_id, amount, payment_date)
+- `expenses` (milestone_id, amount, expense_date)
+- `projects` (contract_value, start_date, expected_end_date, status)
+
+**New DB function required:**
+```sql
+CREATE FUNCTION get_milestone_urgency_feed()
+RETURNS TABLE (project_name, milestone_name, due_date, amount, received, urgency_state)
+```
+
+### H.4 API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/dashboard/milestones/urgency` | Returns urgency-sorted milestone list |
+| GET | `/api/projects/[id]/milestone-suggestions` | Returns suggested schedule from historical data |
+| GET | `/api/dashboard/planning-timeline` | Returns multi-project timeline data |
+
+---
+
+## Module I: Back Entry & Financial Amendment System
+
+> **Owner Request:** "Allow back entry for ongoing and ended projects to fix financials when entry for a particular milestone is partial, incorrect, or missing — to catch what was skipped during work or final settlement."
+
+### I.1 Overview
+
+The Back Entry system allows **authorised users (owner + accountant)** to retroactively add, edit, or flag financial records for any project — active, completed, or even cancelled. This is critical for construction businesses where payments often arrive in parts, verbal agreements precede paperwork, and final settlements involve reconciliation of months of transactions.
+
+### I.2 Feature Breakdown
+
+#### I.2.1 — Back Entry Panel (Income)
+
+A dedicated panel accessible from the **Project Detail page** for recording income that was received but never entered (or entered incorrectly).
+
+**Fields:**
+- `Project` (pre-selected)
+- `Milestone` (dropdown, shows all milestones including completed ones)
+- `Amount Received`
+- `Date Received` (historical date picker — allows past dates)
+- `Payment Mode` (Bank / UPI / Cash / Cheque)
+- `Reference Number`
+- `Reason for Back Entry` (freetext — e.g., "Missed during site visit", "Partial cheque received earlier")
+- `Entered By` (auto-filled from session)
+- `Entry Date` (system timestamp, immutable)
+
+> The distinction between `Date Received` (historical) and `Entry Date` (now) creates a full audit trail.
+
+#### I.2.2 — Back Entry Panel (Expense)
+
+Same as income panel, but for expenses:
+- All fields from the standard `ExpenseForm`
+- `Expense Date` allows historical dates
+- `Reason for Back Entry` (mandatory)
+- Flag: `Is this a correction?` — if checked, links to an existing expense record to mark as "superseded"
+
+#### I.2.3 — Amendment / Correction Flow
+
+For **incorrect existing entries**, not just missing ones:
+
+1. User navigates to any Income or Expense record
+2. Clicks **"Amend Entry"** (visible to owner + accountant)
+3. A modal shows the original record (read-only) alongside an editable amendment form
+4. On save, the system:
+   - Creates a new `income_amendments` / `expense_amendments` record (see schema below)
+   - Marks the original record with `is_amended = true`
+   - Updates the financial totals to use the amended figure
+5. Amended records show an **"Amended"** badge with a link to the amendment log
+
+#### I.2.4 — Settlement Reconciliation Wizard
+
+For **completed or closing projects**, a guided wizard that:
+
+1. Shows a side-by-side view:
+   - **Left**: Contract milestones and their expected payments
+   - **Right**: Actual income received and expenses paid
+2. Highlights gaps: milestones with partial payments, unpaid expenses
+3. For each gap, prompts: *"Is this a missed entry or genuinely outstanding?"*
+4. Owner can either: **Add back entry**, **Mark as written off**, or **Flag for follow-up**
+5. On completion, generates a **Final Settlement Report** (PDF) showing all adjustments made
+
+#### I.2.5 — Audit Trail
+
+All back entries and amendments are tracked in a read-only audit log:
+- Who made the entry (user ID + name)
+- When it was entered (system timestamp)
+- What the change was (original vs amended)
+- Why (reason field)
+
+The audit log is accessible to the **owner only** from the Project Detail page under an "Audit" tab.
+
+### I.3 Database Changes Required
+
+```sql
+-- Amendment tracking for income records
+CREATE TABLE income_amendments (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  original_income_id UUID REFERENCES income(id),
+  project_id UUID REFERENCES projects(id),
+  milestone_id UUID REFERENCES milestones(id),
+  original_amount DECIMAL(12,2),
+  amended_amount DECIMAL(12,2),
+  original_date DATE,
+  amended_date DATE,
+  reason TEXT NOT NULL,
+  is_back_entry BOOLEAN DEFAULT FALSE,
+  amended_by UUID REFERENCES profiles(id),
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Amendment tracking for expense records
+CREATE TABLE expense_amendments (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  original_expense_id UUID REFERENCES expenses(id),
+  project_id UUID REFERENCES projects(id),
+  original_amount DECIMAL(12,2),
+  amended_amount DECIMAL(12,2),
+  original_date DATE,
+  amended_date DATE,
+  reason TEXT NOT NULL,
+  is_back_entry BOOLEAN DEFAULT FALSE,
+  amended_by UUID REFERENCES profiles(id),
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Add amendment flag to existing tables
+ALTER TABLE income ADD COLUMN is_amended BOOLEAN DEFAULT FALSE;
+ALTER TABLE income ADD COLUMN is_back_entry BOOLEAN DEFAULT FALSE;
+ALTER TABLE income ADD COLUMN back_entry_reason TEXT;
+
+ALTER TABLE expenses ADD COLUMN is_amended BOOLEAN DEFAULT FALSE;
+ALTER TABLE expenses ADD COLUMN is_back_entry BOOLEAN DEFAULT FALSE;
+ALTER TABLE expenses ADD COLUMN back_entry_reason TEXT;
+```
+
+### I.4 API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/income/back-entry` | Record a historical income entry |
+| POST | `/api/expenses/back-entry` | Record a historical expense entry |
+| POST | `/api/income/[id]/amend` | Amend an existing income record |
+| POST | `/api/expenses/[id]/amend` | Amend an existing expense record |
+| GET | `/api/projects/[id]/audit-log` | Full amendment & back-entry log |
+| GET | `/api/projects/[id]/settlement-gaps` | Settlement reconciliation gaps |
+| POST | `/api/projects/[id]/finalize-settlement` | Mark gaps and generate final report |
+
+### I.5 UI Entry Points
+
+| Location | Action Available |
+|----------|------------------|
+| Project Detail page → Income tab | "Add Back Entry" button |
+| Project Detail page → Expenses tab | "Add Back Entry" button |
+| Any income/expense record row | "Amend" action (owner + accountant) |
+| Project Detail page → new "Audit" tab | Read-only amendment log |
+| Project header (completed projects) | "Run Settlement Wizard" button |
+
+---
+
 ## Appendix A: Glossary
 
 | Term | Definition |
@@ -766,6 +923,11 @@ async def generate_pnl(project_id: str):
 | **Milestone** | Pre-defined project stage triggering a client payment |
 | **TMT Steel** | Thermo-Mechanically Treated steel bars used in construction |
 | **Broker** | Labour contractor who supplies workers for a commission |
+| **Back Entry** | A financial record entered after the actual transaction date, with a mandatory reason field and audit timestamp |
+| **Amendment** | A correction to an existing financial record; original is preserved and marked as superseded |
+| **Urgency Score** | A computed value combining days-to-due-date and contract value at stake, used to prioritise milestones |
+| **Settlement Wizard** | A guided reconciliation tool for closing out a project's financial records |
+| **MIE** | Milestone Intelligence Engine — the rule-based suggestion and urgency system |
 
 ---
 
@@ -779,4 +941,4 @@ async def generate_pnl(project_id: str):
 
 ---
 
-*End of Document*
+*End of Document — v1.2*

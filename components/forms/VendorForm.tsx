@@ -14,6 +14,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { toast } from '@/hooks/use-toast';
 import { Plus, Loader2 } from 'lucide-react';
 
+import { financeService } from '@/lib/services/financeService';
+
 const vendorSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
   type: z.enum(['material', 'labour', 'broker', 'other']),
@@ -69,21 +71,9 @@ export function VendorForm({ vendor, onSuccess }: VendorFormProps) {
   const mutation = useMutation({
     mutationFn: async (data: VendorFormData) => {
       if (isEditing) {
-        const res = await fetch(`/api/vendors/${vendor.id}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data),
-        });
-        if (!res.ok) throw new Error('Failed to update vendor');
-        return res.json();
+        return financeService.updateVendor(vendor.id, data);
       } else {
-        const res = await fetch('/api/vendors', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data),
-        });
-        if (!res.ok) throw new Error('Failed to create vendor');
-        return res.json();
+        return financeService.createVendor(data);
       }
     },
     onSuccess: () => {

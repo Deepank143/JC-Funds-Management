@@ -1,6 +1,5 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { useAdmin } from '@/contexts/AdminContext';
@@ -25,20 +24,7 @@ interface HeaderProps {
 export function Header({ onMenuClick }: HeaderProps) {
   const router = useRouter();
   const supabase = createClientComponentClient();
-  const { isOwner, isAdminMode, toggleAdminMode, userRole } = useAdmin();
-  const [userName, setUserName] = useState('User');
-
-  useEffect(() => {
-    const getUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user?.user_metadata?.full_name) {
-        setUserName(session.user.user_metadata.full_name);
-      } else if (session?.user?.email) {
-        setUserName(session.user.email.split('@')[0]);
-      }
-    };
-    getUser();
-  }, [supabase.auth]);
+  const { isOwner, isAdminMode, toggleAdminMode, userRole, userName } = useAdmin();
 
   const handleSignOut = async () => {
     try {
@@ -47,7 +33,7 @@ export function Header({ onMenuClick }: HeaderProps) {
         title: 'Signed out',
         description: 'You have been successfully signed out.',
       });
-      window.location.href = '/login';
+      router.replace('/login');
     } catch (error) {
       toast({
         title: 'Error',

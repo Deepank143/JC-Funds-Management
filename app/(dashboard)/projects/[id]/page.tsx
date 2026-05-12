@@ -16,84 +16,33 @@ import {
   LayoutList
 } from 'lucide-react';
 import { MilestoneManager } from '@/components/projects/MilestoneManager';
-
-interface ProjectPnL {
-  summary: {
-    total_income: number;
-    total_expenses: number;
-    total_paid: number;
-    total_payable: number;
-    profit: number;
-    profit_margin: number;
-    realized_profit: number;
-  };
-  income: Array<{
-    amount: number;
-    payment_date: string;
-    payment_mode: string;
-    reference_number: string;
-    milestone_id: string | null;
-    milestones: { name: string; percentage: number } | null;
-  }>;
-  expenses: Array<{
-    amount: number;
-    amount_paid: number;
-    milestone_id: string | null;
-    expense_categories: { name: string };
-  }>;
-  category_breakdown: Record<string, {
-    total: number;
-    paid: number;
-    unpaid: number;
-    items: Array<any>;
-  }>;
-}
-
-interface ProjectDetail {
-  id: string;
-  name: string;
-  location: string | null;
-  description: string | null;
-  contract_value: number;
-  status: string;
-  start_date: string | null;
-  expected_end_date: string | null;
-  clients: { id: string; name: string; phone: string; email: string } | null;
-  milestones: Array<{
-    id: string;
-    name: string;
-    percentage: number;
-    amount: number;
-    status: string;
-    due_date: string;
-  }>;
-}
-
-async function fetchProjectDetail(id: string): Promise<ProjectDetail> {
-  const res = await fetch(`/api/projects/${id}`);
-  if (!res.ok) throw new Error('Failed to fetch project');
-  return res.json();
-}
-
-async function fetchProjectPnL(id: string): Promise<ProjectPnL> {
-  const res = await fetch(`/api/projects/${id}/pnl`);
-  if (!res.ok) throw new Error('Failed to fetch P&L');
-  return res.json();
-}
+import { MilestoneInsightCard } from '@/components/projects/MilestoneInsightCard';
+import { AdminCorrectionModal } from '@/components/admin/AdminCorrectionModal';
+import { SettlementWizard } from '@/components/projects/SettlementWizard';
+import { financeService } from '@/lib/services/financeService';
+import { ProjectDetail, ProjectPnL, MilestoneStats, ProjectInsights } from '@/lib/types';
+import { useState } from 'react';
 
 export default function ProjectDetailPage() {
   const router = useRouter();
   const params = useParams();
   const projectId = params.id as string;
+  const [correctionEntry, setCorrectionEntry] = useState<{ type: 'income' | 'expense'; data: any } | null>(null);
+  const [isSettlementOpen, setIsSettlementOpen] = useState(false);
 
   const { data: project, isLoading: projectLoading } = useQuery({
     queryKey: ['project', projectId],
-    queryFn: () => fetchProjectDetail(projectId),
+    queryFn: () => financeService.getProjectDetail(projectId),
   });
 
   const { data: pnl, isLoading: pnlLoading } = useQuery({
     queryKey: ['project-pnl', projectId],
-    queryFn: () => fetchProjectPnL(projectId),
+    queryFn: () => financeService.getProjectPnL(projectId),
+  });
+
+  const { data: insights, isLoading: insightsLoading } = useQuery({
+    queryKey: ['project-insights', projectId],
+    queryFn: () => financeService.getProjectInsights(projectId),
   });
 
   const { isOwner, isAdminMode } = useAdmin();
@@ -138,22 +87,10 @@ export default function ProjectDetailPage() {
 
   const marginColor = getProfitColor(summary.profit_margin);
   
-  // Calculate milestone stats
-  const milestoneStats = project?.milestones?.map(milestone => {
-    const received = pnl?.income
-      ?.filter(inc => inc.milestone_id === milestone.id)
-      ?.reduce((sum, inc) => sum + inc.amount, 0) || 0;
-      
-    const expended = pnl?.expenses
-      ?.filter(exp => exp.milestone_id === milestone.id)
-      ?.reduce((sum, exp) => sum + exp.amount, 0) || 0;
-
-    const pending = milestone.amount - received;
-    const progress = (received / milestone.amount) * 100;
-    const netPosition = received - expended;
-    
-    return { ...milestone, received, expended, pending, progress, netPosition };
-  }) || [];
+  // Use service to calculate milestone stats
+  const milestoneStats = (project && pnl) 
+    ? financeService.calculateMilestoneStats(project, pnl)
+    : [];
 
   return (
     <div className="space-y-6">
@@ -169,6 +106,17 @@ export default function ProjectDetailPage() {
               <Badge variant={project.status === 'active' ? 'default' : 'secondary'}>
                 {project.status}
               </Badge>
+              {showSensitiveData && project.status !== 'completed' && (
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  className="h-7 px-2 text-[10px] bg-indigo-50 border-indigo-200 text-indigo-700 hover:bg-indigo-100 ml-2"
+                  onClick={() => setIsSettlementOpen(true)}
+                >
+                  <CheckCircle2 className="mr-1 h-3 w-3" />
+                  Run Settlement
+                </Button>
+              )}
             </div>
             <div className="flex items-center gap-3 mt-1 text-sm text-muted-foreground">
               <span className="flex items-center gap-1.5">
@@ -346,139 +294,155 @@ export default function ProjectDetailPage() {
         </Card>
       )}
 
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Payment Milestones</CardTitle>
-          <MilestoneManager 
-            projectId={project.id} 
-            contractValue={project.contract_value} 
-            existingMilestones={project.milestones}
-          />
-        </CardHeader>
-        <CardContent>
-          {!project.milestones || project.milestones.length === 0 ? (
-            <div className="text-center py-12 border-2 border-dashed rounded-xl bg-muted/30">
-              <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
-                <LayoutList className="h-6 w-6 text-primary" />
-              </div>
-              <h3 className="text-lg font-semibold">No Schedule Defined</h3>
-              <p className="text-sm text-muted-foreground max-w-[280px] mx-auto mt-1 mb-6">
-                Define your payment milestones and amounts to track project receivables.
-              </p>
+      <div className="grid gap-6 lg:grid-cols-3">
+        <div className="lg:col-span-2">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle>Payment Milestones</CardTitle>
               <MilestoneManager 
                 projectId={project.id} 
                 contractValue={project.contract_value} 
-                existingMilestones={[]}
+                existingMilestones={project.milestones}
               />
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {/* Overall Schedule Summary */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 rounded-xl bg-muted/30 border">
-                <div>
-                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Total Schedule</p>
-                  <p className="text-sm font-bold mt-0.5">{formatINR(project.milestones.reduce((s, m) => s + m.amount, 0))}</p>
-                </div>
-                <div>
-                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Received</p>
-                  <p className="text-sm font-bold mt-0.5 text-emerald-600">
-                    {formatINR(milestoneStats.reduce((s, m) => s + m.received, 0))}
+            </CardHeader>
+            <CardContent>
+              {!project.milestones || project.milestones.length === 0 ? (
+                <div className="text-center py-12 border-2 border-dashed rounded-xl bg-muted/30">
+                  <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                    <LayoutList className="h-6 w-6 text-primary" />
+                  </div>
+                  <h3 className="text-lg font-semibold">No Schedule Defined</h3>
+                  <p className="text-sm text-muted-foreground max-w-[280px] mx-auto mt-1 mb-6">
+                    Define your payment milestones and amounts to track project receivables.
                   </p>
+                  <MilestoneManager 
+                    projectId={project.id} 
+                    contractValue={project.contract_value} 
+                    existingMilestones={[]}
+                  />
                 </div>
-                <div>
-                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Pending</p>
-                  <p className="text-sm font-bold mt-0.5 text-amber-600">
-                    {formatINR(milestoneStats.reduce((s, m) => s + m.pending, 0))}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Completion</p>
-                  <p className="text-sm font-bold mt-0.5">
-                    {Math.round((milestoneStats.reduce((s, m) => s + m.received, 0) / project.contract_value) * 100)}%
-                  </p>
-                </div>
-              </div>
+              ) : (
+                <div className="space-y-4">
+                  {/* Overall Schedule Summary */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 rounded-xl bg-muted/30 border">
+                    <div>
+                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Total Schedule</p>
+                      <p className="text-sm font-bold mt-0.5">{formatINR(project.milestones.reduce((s, m) => s + m.amount, 0))}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Received</p>
+                      <p className="text-sm font-bold mt-0.5 text-emerald-600">
+                        {formatINR(milestoneStats.reduce((s, m) => s + m.received, 0))}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Pending</p>
+                      <p className="text-sm font-bold mt-0.5 text-amber-600">
+                        {formatINR(milestoneStats.reduce((s, m) => s + m.pending, 0))}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Completion</p>
+                      <p className="text-sm font-bold mt-0.5">
+                        {Math.round((milestoneStats.reduce((s, m) => s + m.received, 0) / project.contract_value) * 100)}%
+                      </p>
+                    </div>
+                  </div>
 
-              <div className="space-y-3">
-                {milestoneStats.map((milestone) => (
-                  <div 
-                    key={milestone.id}
-                    className="flex flex-col p-4 rounded-xl border bg-card hover:shadow-sm transition-all gap-4"
-                  >
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex items-start gap-3">
-                        <div className={`mt-1 p-1.5 rounded-full ${
-                          milestone.progress >= 100 ? 'bg-emerald-100' : 
-                          milestone.progress > 0 ? 'bg-amber-100' : 'bg-slate-100'
-                        }`}>
-                          {milestone.progress >= 100 ? (
-                            <CheckCircle2 className={`h-4 w-4 ${milestone.progress >= 100 ? 'text-emerald-600' : 'text-slate-400'}`} />
-                          ) : (
-                            <Clock className={`h-4 w-4 ${milestone.progress > 0 ? 'text-amber-600' : 'text-slate-400'}`} />
-                          )}
+                  <div className="space-y-3">
+                    {milestoneStats.map((milestone) => (
+                      <div 
+                        key={milestone.id}
+                        className="flex flex-col p-4 rounded-xl border bg-card hover:shadow-sm transition-all gap-4"
+                      >
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex items-start gap-3">
+                            <div className={`mt-1 p-1.5 rounded-full ${
+                              milestone.progress >= 100 ? 'bg-emerald-100' : 
+                              milestone.progress > 0 ? 'bg-amber-100' : 'bg-slate-100'
+                            }`}>
+                              {milestone.progress >= 100 ? (
+                                <CheckCircle2 className={`h-4 w-4 ${milestone.progress >= 100 ? 'text-emerald-600' : 'text-slate-400'}`} />
+                              ) : (
+                                <Clock className={`h-4 w-4 ${milestone.progress > 0 ? 'text-amber-600' : 'text-slate-400'}`} />
+                              )}
+                            </div>
+                            <div>
+                              <p className="font-semibold text-sm leading-tight">{milestone.name}</p>
+                              <div className="flex items-center gap-2 mt-1">
+                                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-muted">
+                                  {milestone.percentage}%
+                                </span>
+                                <span className="text-[10px] text-muted-foreground">
+                                  Due: {milestone.due_date ? formatDate(milestone.due_date) : 'Not set'}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-bold text-sm">{formatINR(milestone.amount)}</p>
+                            <Badge variant={
+                              milestone.progress >= 100 ? 'default' : 
+                              milestone.progress > 0 ? 'secondary' : 'outline'
+                            } className="text-[10px] px-1.5 py-0 h-4 mt-1">
+                              {milestone.progress >= 100 ? 'Fully Paid' : 
+                               milestone.progress > 0 ? 'Partially Paid' : 'Pending'}
+                            </Badge>
+                          </div>
                         </div>
-                        <div>
-                          <p className="font-semibold text-sm leading-tight">{milestone.name}</p>
-                          <div className="flex items-center gap-2 mt-1">
-                            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-muted">
-                              {milestone.percentage}%
-                            </span>
-                            <span className="text-[10px] text-muted-foreground">
-                              Due: {milestone.due_date ? formatDate(milestone.due_date) : 'Not set'}
-                            </span>
+
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between text-[10px]">
+                            <span className="text-muted-foreground">Payment Progress</span>
+                            <span className="font-medium">{Math.round(milestone.progress)}%</span>
+                          </div>
+                          <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+                            <div 
+                              className={`h-full transition-all duration-500 ${
+                                milestone.progress >= 100 ? 'bg-emerald-500' : 'bg-amber-500'
+                              }`}
+                              style={{ width: `${Math.min(milestone.progress, 100)}%` }}
+                            />
+                          </div>
+                          
+                          <div className="grid grid-cols-3 gap-2 p-2 rounded-lg bg-muted/20 border border-muted/30 mt-2">
+                            <div>
+                              <p className="text-[9px] uppercase text-muted-foreground font-medium">Income</p>
+                              <p className="text-[11px] font-bold text-emerald-600">{formatINR(milestone.received)}</p>
+                            </div>
+                            <div>
+                              <p className="text-[9px] uppercase text-muted-foreground font-medium">Expenses</p>
+                              <p className="text-[11px] font-bold text-red-600">{formatINR(milestone.expended)}</p>
+                            </div>
+                            <div>
+                              <p className="text-[9px] uppercase text-muted-foreground font-medium">Net Stage</p>
+                              <p className={`text-[11px] font-bold ${milestone.netPosition >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>
+                                {formatINR(milestone.netPosition)}
+                              </p>
+                            </div>
                           </div>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <p className="font-bold text-sm">{formatINR(milestone.amount)}</p>
-                        <Badge variant={
-                          milestone.progress >= 100 ? 'default' : 
-                          milestone.progress > 0 ? 'secondary' : 'outline'
-                        } className="text-[10px] px-1.5 py-0 h-4 mt-1">
-                          {milestone.progress >= 100 ? 'Fully Paid' : 
-                           milestone.progress > 0 ? 'Partially Paid' : 'Pending'}
-                        </Badge>
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between text-[10px]">
-                        <span className="text-muted-foreground">Payment Progress</span>
-                        <span className="font-medium">{Math.round(milestone.progress)}%</span>
-                      </div>
-                      <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
-                        <div 
-                          className={`h-full transition-all duration-500 ${
-                            milestone.progress >= 100 ? 'bg-emerald-500' : 'bg-amber-500'
-                          }`}
-                          style={{ width: `${Math.min(milestone.progress, 100)}%` }}
-                        />
-                      </div>
-                      
-                      <div className="grid grid-cols-3 gap-2 p-2 rounded-lg bg-muted/20 border border-muted/30 mt-2">
-                        <div>
-                          <p className="text-[9px] uppercase text-muted-foreground font-medium">Income</p>
-                          <p className="text-[11px] font-bold text-emerald-600">{formatINR(milestone.received)}</p>
-                        </div>
-                        <div>
-                          <p className="text-[9px] uppercase text-muted-foreground font-medium">Expenses</p>
-                          <p className="text-[11px] font-bold text-red-600">{formatINR(milestone.expended)}</p>
-                        </div>
-                        <div>
-                          <p className="text-[9px] uppercase text-muted-foreground font-medium">Net Stage</p>
-                          <p className={`text-[11px] font-bold ${milestone.netPosition >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>
-                            {formatINR(milestone.netPosition)}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
+                    ))}
                   </div>
-                ))}
-              </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="lg:col-span-1">
+          {insightsLoading ? (
+            <div className="space-y-4">
+              <Skeleton className="h-[200px]" />
+              <Skeleton className="h-[150px]" />
+              <Skeleton className="h-[250px]" />
             </div>
-        )}
-      </CardContent>
-      </Card>
+          ) : insights ? (
+            <MilestoneInsightCard insights={insights} />
+          ) : null}
+        </div>
+      </div>
 
       {/* Income History */}
       <Card>
@@ -510,11 +474,23 @@ export default function ProjectDetailPage() {
                   </div>
                   <div className="flex items-center justify-between sm:text-right sm:flex-col sm:items-end gap-1 border-t sm:border-0 pt-2 sm:pt-0">
                     <p className="font-bold text-emerald-600">{formatINR(payment.amount)}</p>
-                    {payment.reference_number && (
-                      <p className="text-[10px] text-muted-foreground font-mono bg-muted px-1 rounded">
-                        Ref: {payment.reference_number}
-                      </p>
-                    )}
+                    <div className="flex items-center gap-2">
+                      {payment.reference_number && (
+                        <p className="text-[10px] text-muted-foreground font-mono bg-muted px-1 rounded">
+                          Ref: {payment.reference_number}
+                        </p>
+                      )}
+                      {showSensitiveData && (
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-6 px-2 text-[10px] text-amber-600 hover:text-amber-700 hover:bg-amber-50"
+                          onClick={() => setCorrectionEntry({ type: 'income', data: payment })}
+                        >
+                          Correct
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}
@@ -524,6 +500,26 @@ export default function ProjectDetailPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Admin Correction Modal */}
+      {correctionEntry && (
+        <AdminCorrectionModal
+          isOpen={!!correctionEntry}
+          onClose={() => setCorrectionEntry(null)}
+          type={correctionEntry.type}
+          entry={correctionEntry.data}
+        />
+      )}
+
+      {/* Project Settlement Wizard */}
+      {project && (
+        <SettlementWizard
+          isOpen={isSettlementOpen}
+          onClose={() => setIsSettlementOpen(false)}
+          projectId={projectId}
+          projectName={project.name}
+        />
+      )}
     </div>
   );
 }

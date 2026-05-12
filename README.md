@@ -5,15 +5,13 @@
 [![Vercel](https://img.shields.io/badge/Vercel-Deployment-black?style=for-the-badge&logo=vercel)](https://vercel.com/)
 [![License: Private](https://img.shields.io/badge/License-Private-red?style=for-the-badge)](LICENSE)
 
-A premium, enterprise-grade funds tracking and project profitability dashboard specifically engineered for construction consultancy agencies.
+A high-precision, internal funds tracking and project profitability dashboard engineered for Apex Buildcon.
 
 [**🌐 View Live Demo**](https://jc-funds-management.vercel.app)
 
 ---
 
-## 🏗️ Project Overview
-
-Apex Buildcon Funds Management System provides a unified platform to track multi-project finances with high precision. It implements a **Maker-Checker security model**, ensuring that while accountants can record data, only the owner can finalize sensitive financial transactions like payments.
+Apex Buildcon Funds Management System provides a unified platform to track multi-project finances with high precision. Designed for an internal team of 2-3 users, it focuses on manual data entry efficiency and absolute financial integrity.
 
 ### Key Value Propositions
 - **Financial Integrity**: Project-wise P&L tracking with real-time margin calculations.
@@ -37,7 +35,7 @@ Apex Buildcon Funds Management System provides a unified platform to track multi
 
 ### 💰 Vendor & Ledger Management
 - **Vendor Specific Ledgers**: Full transaction history and outstanding balance tracking for every vendor.
-- **Maker-Checker Payments**: Secure payment flow where accountants request and owners approve.
+- **Manual Entry Optimization**: Simplified forms for quick recording of bills and payments.
 - **Receipt Management**: Upload and track bill copies directly against expenses.
 
 ---
@@ -46,13 +44,11 @@ Apex Buildcon Funds Management System provides a unified platform to track multi
 
 | Layer | Technology | Purpose |
 |-------|------------|---------|
-| **Frontend** | Next.js 14 (App Router) | High-performance React framework with SSR/ISR |
-| **Styling** | Tailwind CSS + shadcn/ui | Premium, mobile-first design system |
-| **Backend** | Next.js API Routes | Serverless edge functions for data processing |
-| **Database** | Supabase (PostgreSQL) | Real-time DB with Row Level Security (RLS) |
-| **Auth** | Supabase Auth | Secure Email/Password & Google OAuth integration |
-| **State** | TanStack Query v5 | Robust data fetching and server-state caching |
-| **Validation** | Zod + React Hook Form | Strict type safety for all data entries |
+| **Frontend** | Next.js 14 (App Router) | High-performance React framework |
+| **Database** | Supabase (PostgreSQL) | Centralized ledger with RLS security |
+| **Logic Layer** | Lib Services | Structured business logic & atomic operations |
+| **Auth** | Supabase Auth | Secure Email/Password & Google OAuth |
+| **State** | TanStack Query v5 | Efficient server-state synchronization |
 
 ---
 
@@ -99,11 +95,26 @@ npm run dev
 
 ---
 
-## 📅 Roadmap (Phase 2)
-- [ ] **WhatsApp Bot**: Automated payment reminders for clients.
-- [ ] **GST Module**: Automated tax calculation and invoice generation.
-- [ ] **Attendance**: QR-based labour attendance linked to payroll.
-- [ ] **Analytics**: Predictive cash flow forecasting based on milestone dates.
+## 📅 Roadmap
+
+### ✅ Phase 1 — Core System (Live)
+- [x] Auth, RBAC (Owner / Accountant / Viewer)
+- [x] Project, Client, Vendor CRUD
+- [x] Income & Expense recording
+- [x] Project P&L and KPI Dashboard
+- [x] PDF / CSV Report Export
+- [x] Alerts & Overdue Tracking
+- [x] Global Error Boundary + Loading States
+
+### 🔄 Phase 2 — Architectural Hardening (In Progress)
+- [x] Global Error Boundary
+- [ ] Service Layer (`lib/services/`) consolidation
+- [ ] Atomic Income + Milestone RPC transactions
+- [ ] Auto-Balance in Milestone Manager
+
+### 📋 Phase 3 — Owner Requested Features (v1.2)
+- [ ] **Milestone Intelligence Engine**: Smart suggestions, urgency scoring, real-time fund flow per milestone, multi-project planning timeline
+- [ ] **Back Entry & Amendment System**: Historical income/expense entry, amendment flow with audit trail, Settlement Reconciliation Wizard for closing projects
 
 ---
 

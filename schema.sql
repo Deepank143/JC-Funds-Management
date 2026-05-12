@@ -343,6 +343,7 @@ CREATE POLICY "Project budgets modifiable by owner and accountant" ON project_bu
 CREATE OR REPLACE FUNCTION get_projects_with_margins()
 RETURNS TABLE (
   id UUID,
+  client_id UUID,
   name TEXT,
   client_name TEXT,
   location TEXT,
@@ -361,6 +362,7 @@ BEGIN
   RETURN QUERY
   SELECT 
     p.id,
+    p.client_id,
     p.name,
     c.name as client_name,
     p.location,

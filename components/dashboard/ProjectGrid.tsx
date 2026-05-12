@@ -9,31 +9,13 @@ import { formatINR, getProfitColor } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAdmin } from '@/contexts/AdminContext';
 import { ArrowUpRight, ArrowDownRight, Minus } from 'lucide-react';
-
-interface Project {
-  id: string;
-  name: string;
-  client_name: string | null;
-  location: string | null;
-  status: string;
-  contract_value: number;
-  total_income: number;
-  total_expenses: number;
-  profit: number;
-  profit_margin: number;
-}
-
-async function fetchProjects(): Promise<Project[]> {
-  const res = await fetch('/api/projects?status=active');
-  if (!res.ok) throw new Error('Failed to fetch projects');
-  return res.json();
-}
+import { financeService } from '@/lib/services/financeService';
 
 export function ProjectGrid() {
   const router = useRouter();
   const { data: projects, isLoading } = useQuery({
     queryKey: ['active-projects'],
-    queryFn: fetchProjects,
+    queryFn: () => financeService.getActiveProjects(),
   });
 
   const { isAdminMode, userRole } = useAdmin();

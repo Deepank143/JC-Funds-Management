@@ -1,6 +1,6 @@
 {
   "name": "apex-buildcon-funds",
-  "version": "1.0.0",
+  "version": "3.0.0",
   "description": "Funds Management System for Apex Buildcon",
   "private": true,
   "scripts": {

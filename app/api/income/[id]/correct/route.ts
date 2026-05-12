@@ -1,5 +1,3 @@
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { checkOwner } from '@/lib/auth-utils';
 
@@ -13,6 +11,20 @@ export async function PATCH(
 
     const body = await request.json();
     const incomeId = params.id;
+
+    // BUG-03 FIX: Server-side validation — cannot be bypassed by direct API calls
+    if (!body.correction_reason || String(body.correction_reason).trim().length < 10) {
+      return NextResponse.json(
+        { error: 'correction_reason must be at least 10 characters' },
+        { status: 400 }
+      );
+    }
+    if (!body.amount || Number(body.amount) <= 0) {
+      return NextResponse.json(
+        { error: 'amount must be greater than 0' },
+        { status: 400 }
+      );
+    }
 
     // 1. Get original data for audit log
     const { data: originalData, error: fetchError } = await supabase

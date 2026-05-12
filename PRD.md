@@ -2,7 +2,7 @@
 
 ## Apex Buildcon — Funds Management System
 
-**Version:** 1.1 (Internal QoL Release)  
+**Version:** 3.0 (Architectural Release)  
 **Date:** May 2026  
 **Prepared for:** Harsh Jani, Owner — Apex Buildcon  
 **Tech Stack:** Next.js 14 · Supabase · Vercel · TanStack Query
@@ -24,9 +24,10 @@
 10. [Success Metrics](#10-success-metrics)
 11. [Future Enhancements](#11-future-enhancements)
 
-### New Modules (v1.2)
-- [Module H: Milestone Intelligence Engine](#module-h-milestone-intelligence-engine)
-- [Module I: Back Entry & Financial Amendment System](#module-i-back-entry--financial-amendment-system)
+### ✅ Phase 3 — Owner Requested Features (v3.0)
+- [x] **Milestone Intelligence Engine**: Smart suggestions, urgency scoring, real-time fund flow per milestone, multi-project planning timeline
+- [x] **Back Entry & Amendment System**: Historical income/expense entry, amendment flow with audit trail, Settlement Reconciliation Wizard for closing projects
+- [x] **Architectural Hardening**: Centralized service layer, improved precision formatting, and global error handling.
 
 ---
 
@@ -633,15 +634,15 @@ async def generate_pnl(project_id: str):
 | Priority | Feature | Status |
 |----------|---------|--------|
 | P0 | Atomic Income + Milestone transaction (RPC) | 🔄 Planned |
-| P0 | Service Layer (`lib/services/`) consolidation | 🔄 Planned |
-| P1 | Adaptive currency formatting (K / L / Cr) | 🔄 Planned |
-| P1 | Auto-Balance in Milestone Manager | 🔄 Planned |
+| P0 | Service Layer (`lib/services/`) consolidation | ✅ Done |
+| P1 | Adaptive currency formatting (K / L / Cr) | ✅ Done |
+| P1 | Auto-Balance in Milestone Manager | ✅ Done |
 
 ### Phase 3 (New Owner Requests — v1.2)
 | Priority | Feature | Status |
 |----------|---------|--------|
-| P0 | **Module H**: Milestone Intelligence Engine | 📋 Spec Written |
-| P0 | **Module I**: Back Entry & Financial Amendment System | 📋 Spec Written |
+| P0 | **Module H**: Milestone Intelligence Engine | ✅ Done |
+| P0 | **Module I**: Back Entry & Financial Amendment System | ✅ Done |
 | P1 | Labour attendance | 📋 Backlog |
 | P1 | Photo upload for bills | 📋 Backlog |
 

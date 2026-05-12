@@ -1,5 +1,3 @@
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { checkOwner } from '@/lib/auth-utils';
 
@@ -14,27 +12,51 @@ export async function POST(
     const projectId = params.id;
     const body = await request.json();
 
-    // 1. Mark project as completed
+    // 1. Mark project as completed with actual end date
     const { error: projectError } = await supabase
       .from('projects')
-      .update({ 
+      .update({
         status: 'completed',
         actual_end_date: new Date().toISOString().split('T')[0],
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
       })
       .eq('id', projectId);
 
     if (projectError) throw projectError;
 
-    // 2. Mark all remaining milestones as 'billed' or 'paid' (logic could vary, here we just settle)
-    // Actually, we'll just log this in audit log as a settlement event
-    
-    // 3. Log settlement event
+    // ISSUE-06 FIX: Mark all non-paid milestones as 'paid' (write-off on settlement).
+    // Without this, dashboard alerts keep firing for milestones on a closed project.
+    const { error: milestoneError } = await supabase
+      .from('milestones')
+      .update({ status: 'paid' })
+      .eq('project_id', projectId)
+      .neq('status', 'paid'); // Only update the ones that aren't already paid
+
+    if (milestoneError) {
+      // Non-fatal: log but don't fail the settlement — project is already marked complete
+      console.warn('Could not update milestone statuses during settlement:', milestoneError.message);
+    }
+
+    // 2. Mark all outstanding expenses as written off (partial -> paid with write-off note)
+    await supabase
+      .from('expenses')
+      .update({
+        payment_status: 'paid',
+        notes: 'Written off during project settlement',
+      })
+      .eq('project_id', projectId)
+      .in('payment_status', ['unpaid', 'partial']);
+
+    // 3. Log settlement event in audit trail
     await supabase.from('audit_logs').insert({
       table_name: 'projects',
       record_id: projectId,
       action: 'SETTLEMENT',
-      new_data: { status: 'completed', settled_at: new Date().toISOString() },
+      new_data: {
+        status: 'completed',
+        settled_at: new Date().toISOString(),
+        write_off_reason: body.write_off_reason ?? 'Project finalized via Settlement Wizard',
+      },
       reason: 'Project finalized via Settlement Wizard',
       performed_by: session.user.id,
     });

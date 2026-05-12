@@ -1,5 +1,5 @@
 import { MilestoneSuggestion, UrgencyAlert, ProjectInsights, ProjectDetail, ProjectPnL } from '../types';
-import { daysBetween } from '../utils';
+import { daysUntil } from '../utils';
 
 export const intelligenceService = {
   /**
@@ -30,11 +30,23 @@ export const intelligenceService = {
         if (milestone.status === 'paid') return;
 
         if (!milestone.due_date) return;
-        const dueDate = new Date(milestone.due_date);
-        const daysRemaining = daysBetween(now, dueDate);
 
-        // Deadline alerts
-        if (daysRemaining <= 7) {
+        // daysUntil: positive = days remaining, negative = overdue
+        const daysRemaining = daysUntil(milestone.due_date);
+
+        // Alert on anything due within 21 days or already overdue
+        if (daysRemaining <= 21) {
+          let priority: 'high' | 'medium' | 'low';
+          if (daysRemaining < 0) {
+            priority = 'high';   // Overdue
+          } else if (daysRemaining <= 2) {
+            priority = 'high';   // Due in 0-2 days
+          } else if (daysRemaining <= 7) {
+            priority = 'medium'; // Due in 3-7 days
+          } else {
+            priority = 'low';    // Due in 8-21 days
+          }
+
           alerts.push({
             projectId: project.id,
             projectName: project.name,
@@ -42,8 +54,8 @@ export const intelligenceService = {
             milestoneName: milestone.name,
             dueDate: milestone.due_date,
             daysRemaining,
-            priority: daysRemaining < 0 ? 'high' : daysRemaining <= 2 ? 'high' : 'medium',
-            type: 'deadline'
+            priority,
+            type: 'deadline',
           });
         }
 

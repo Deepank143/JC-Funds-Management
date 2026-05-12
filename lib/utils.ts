@@ -5,12 +5,16 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-// Format Indian Rupee with 2 decimal places for precision
+/**
+ * Format Indian Rupee. Shows decimals only when there are paise.
+ * e.g. ₹5,00,000 for whole amounts, ₹1,23,456.50 for partial.
+ */
 export function formatINR(amount: number): string {
+  const hasPaise = amount % 1 !== 0;
   return new Intl.NumberFormat('en-IN', {
     style: 'currency',
     currency: 'INR',
-    minimumFractionDigits: 2,
+    minimumFractionDigits: hasPaise ? 2 : 0,
     maximumFractionDigits: 2,
   }).format(amount);
 }
@@ -63,7 +67,10 @@ export function formatDateTime(date: string | Date): string {
   });
 }
 
-// Calculate days between dates (signed: positive = date2 is after date1, negative = date2 is before date1)
+/**
+ * Generic signed difference: positive when date2 is AFTER date1.
+ * Prefer the semantic helpers below for readability.
+ */
 export function daysBetween(date1: string | Date, date2: string | Date): number {
   const d1 = new Date(date1);
   const d2 = new Date(date2);
@@ -73,9 +80,28 @@ export function daysBetween(date1: string | Date, date2: string | Date): number 
   return Math.round(diffTime / (1000 * 60 * 60 * 24));
 }
 
+/**
+ * How many days UNTIL a future date from today.
+ * Positive = date is in the future (days remaining).
+ * Negative = date is in the past (days overdue).
+ * Use this in intelligence / urgency logic.
+ */
+export function daysUntil(targetDate: string | Date): number {
+  return daysBetween(new Date(), targetDate);
+}
+
+/**
+ * How many days AGO a past date was, from today.
+ * Positive = date is in the past.
+ * Negative = date is in the future.
+ */
+export function daysSince(pastDate: string | Date): number {
+  return daysBetween(pastDate, new Date());
+}
+
 // Get user-friendly relative time string
 export function getRelativeTime(date: string | Date): string {
-  const diff = daysBetween(date, new Date());
+  const diff = daysSince(date); // positive = date is in the past
   if (diff === 0) return 'today';
   if (diff === 1) return 'yesterday';
   if (diff === -1) return 'tomorrow';

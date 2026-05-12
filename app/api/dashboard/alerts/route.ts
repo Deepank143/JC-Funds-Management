@@ -63,31 +63,50 @@ export async function GET() {
       });
     }
 
-    // 3. Budget Thresholds (Projects where expenses >= 90% of contract_value)
+    // 3. Budget Thresholds
+    // ISSUE-05 FIX: Compare expenses against actual income RECEIVED, not contract_value.
+    // Comparing vs contract_value caused false alerts on projects where the client hasn't paid yet.
+    // We still alert if expenses exceed contract_value as a hard cap warning.
     const { data: projectsData, error: projectsDataError } = await supabase
       .from('projects')
-      .select('id, name, contract_value, expenses(amount)')
+      .select('id, name, contract_value, expenses(amount), income(amount)')
       .eq('status', 'active');
 
     if (projectsDataError) throw projectsDataError;
 
     if (projectsData) {
       projectsData.forEach((p: any) => {
-        if (!p.contract_value) return; // Skip if no contract value set
-        
-        const totalExpenses = p.expenses.reduce((sum: number, e: any) => sum + (e.amount || 0), 0);
-        const percentage = (totalExpenses / p.contract_value) * 100;
+        const totalExpenses = (p.expenses ?? []).reduce((sum: number, e: any) => sum + (e.amount || 0), 0);
+        const totalReceived = (p.income ?? []).reduce((sum: number, i: any) => sum + (i.amount || 0), 0);
 
-        if (percentage >= 90) {
+        // Alert 1: Spending close to or beyond what has been received
+        if (totalReceived > 0) {
+          const spendRatio = (totalExpenses / totalReceived) * 100;
+          if (spendRatio >= 90) {
+            alerts.push({
+              id: `budget-received-${p.id}`,
+              type: 'budget_threshold',
+              title: spendRatio >= 100 ? 'Cash Flow Risk' : 'Cash Flow Warning',
+              description: `Project "${p.name}" has spent ${spendRatio.toFixed(1)}% of received income.`,
+              amount: totalExpenses,
+              date: new Date().toISOString(),
+              project_name: p.name,
+              severity: spendRatio >= 100 ? 'high' : 'medium',
+            });
+          }
+        }
+
+        // Alert 2: Expenses exceed the total contract value (hard cap breach)
+        if (p.contract_value && totalExpenses > p.contract_value) {
           alerts.push({
-            id: `budget-${p.id}`,
+            id: `budget-contract-${p.id}`,
             type: 'budget_threshold',
-            title: percentage >= 100 ? 'Budget Exceeded' : 'Budget Warning',
-            description: `Project "${p.name}" has used ${percentage.toFixed(1)}% of its contract value.`,
+            title: 'Contract Budget Exceeded',
+            description: `Project "${p.name}" expenses (${((totalExpenses / p.contract_value) * 100).toFixed(1)}%) exceed the contract value.`,
             amount: totalExpenses,
             date: new Date().toISOString(),
             project_name: p.name,
-            severity: percentage >= 100 ? 'high' : 'medium',
+            severity: 'high',
           });
         }
       });

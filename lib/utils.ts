@@ -40,11 +40,6 @@ export function formatINRAdaptive(amount: number, withPrefix = true): string {
   return `${sign}${prefix}${absAmount.toFixed(0)}`;
 }
 
-// Format number in Indian format (lakhs/crores)
-export function formatIndianNumber(num: number): string {
-  return new Intl.NumberFormat('en-IN').format(num);
-}
-
 // Format date to DD-MM-YYYY
 export function formatDate(date: string | Date): string {
   const d = new Date(date);
@@ -52,18 +47,6 @@ export function formatDate(date: string | Date): string {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric'
-  });
-}
-
-// Format date with time
-export function formatDateTime(date: string | Date): string {
-  const d = new Date(date);
-  return d.toLocaleString('en-GB', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
   });
 }
 
@@ -116,8 +99,3 @@ export function getProfitColor(margin: number): string {
   return 'text-red-600 bg-red-50';
 }
 
-// Truncate text
-export function truncateText(text: string, maxLength: number): string {
-  if (text.length <= maxLength) return text;
-  return text.slice(0, maxLength) + '...';
-}

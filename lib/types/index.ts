@@ -1,4 +1,3 @@
-export type UserRole = 'owner' | 'accountant' | 'viewer';
 
 export interface ProjectDetail {
   id: string;

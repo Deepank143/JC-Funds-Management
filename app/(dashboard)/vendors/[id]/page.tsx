@@ -1,6 +1,7 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
+import Image from 'next/image';
 import { useAdmin } from '@/contexts/AdminContext';
 import { VendorForm } from '@/components/forms/VendorForm';
 import {
@@ -14,6 +15,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, Receipt, ArrowLeft, Building, Calendar, Wallet, EyeOff } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import Link from 'next/link';
 import { format } from 'date-fns';
 import { formatINR } from '@/lib/utils';
@@ -135,6 +137,38 @@ export default function VendorLedgerPage({ params }: { params: { id: string } })
                   </div>
                 </div>
 
+                {exp.bill_photo_url && (
+                  <div className="flex items-center pt-2">
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <button className="text-blue-600 hover:underline text-xs font-medium focus:outline-none flex items-center">
+                          <Receipt className="h-3 w-3 mr-1" /> View Bill
+                        </button>
+                      </DialogTrigger>
+                      <DialogContent className="sm:max-w-2xl">
+                        <DialogHeader>
+                          <DialogTitle>Bill Photo / Receipt</DialogTitle>
+                        </DialogHeader>
+                        <div className="flex items-center justify-center p-4">
+                          {exp.bill_photo_url.toLowerCase().endsWith('.pdf') ? (
+                            <iframe src={exp.bill_photo_url} className="w-full h-[60vh] border-0" />
+                          ) : (
+                            <div className="relative w-full h-[60vh] sm:h-[70vh]">
+                              <Image 
+                                src={exp.bill_photo_url} 
+                                alt="Bill" 
+                                fill
+                                className="object-contain rounded-md" 
+                                sizes="(max-width: 768px) 100vw, 800px"
+                              />
+                            </div>
+                          )}
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
+                )}
+
                 <div className="flex items-center justify-between pt-2 border-t text-sm">
                   <span className="text-muted-foreground">{exp.expense_categories?.name}</span>
                   <div className="flex items-center gap-1.5">
@@ -158,6 +192,7 @@ export default function VendorLedgerPage({ params }: { params: { id: string } })
               <TableHead>Date</TableHead>
               <TableHead>Project</TableHead>
               <TableHead>Category</TableHead>
+              <TableHead>Receipt</TableHead>
               <TableHead className="text-right">Billed</TableHead>
               <TableHead className="text-right">Paid</TableHead>
               <TableHead className="text-right">Running Balance</TableHead>
@@ -166,7 +201,7 @@ export default function VendorLedgerPage({ params }: { params: { id: string } })
           <TableBody>
             {!ledgerData?.ledger?.length ? (
               <TableRow>
-                <TableCell colSpan={6} className="h-24 text-center">
+                <TableCell colSpan={7} className="h-24 text-center">
                   No transactions found for this vendor.
                 </TableCell>
               </TableRow>
@@ -178,6 +213,39 @@ export default function VendorLedgerPage({ params }: { params: { id: string } })
                   </TableCell>
                   <TableCell>{exp.projects?.name}</TableCell>
                   <TableCell>{exp.expense_categories?.name}</TableCell>
+                  <TableCell>
+                    {exp.bill_photo_url ? (
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <button className="text-blue-600 hover:underline text-sm font-medium focus:outline-none">
+                            View
+                          </button>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-2xl">
+                          <DialogHeader>
+                            <DialogTitle>Bill Photo / Receipt</DialogTitle>
+                          </DialogHeader>
+                          <div className="flex items-center justify-center p-4">
+                            {exp.bill_photo_url.toLowerCase().endsWith('.pdf') ? (
+                              <iframe src={exp.bill_photo_url} className="w-full h-[60vh] border-0" />
+                            ) : (
+                              <div className="relative w-full h-[60vh] sm:h-[70vh]">
+                                <Image 
+                                  src={exp.bill_photo_url} 
+                                  alt="Bill" 
+                                  fill
+                                  className="object-contain rounded-md" 
+                                  sizes="(max-width: 768px) 100vw, 800px"
+                                />
+                              </div>
+                            )}
+                          </div>
+                        </DialogContent>
+                      </Dialog>
+                    ) : (
+                      <span className="text-muted-foreground text-sm">-</span>
+                    )}
+                  </TableCell>
                   <TableCell className="text-right font-medium text-red-600">
                     {exp.amount ? formatINR(exp.amount) : '-'}
                   </TableCell>

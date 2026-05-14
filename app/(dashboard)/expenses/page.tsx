@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAdmin } from '@/contexts/AdminContext';
 import { ExpenseForm } from '@/components/forms/ExpenseForm';
@@ -95,6 +96,12 @@ function SettleExpenseDialog({ expense }: { expense: ExpenseRecord }) {
 export default function ExpensesPage() {
   const { canWrite, canManageFunds } = useAdmin();
 
+  const getExpenseStatus = (expense: ExpenseRecord) => {
+    if (expense.payment_status === 'paid') return { label: 'Paid', color: 'bg-green-500 text-white hover:bg-green-600 border-transparent' };
+    if (expense.payment_status === 'partial') return { label: 'Partial', color: 'bg-yellow-500 text-white hover:bg-yellow-600 border-transparent' };
+    return { label: 'Overdue', color: 'bg-red-500 text-white hover:bg-red-600 border-transparent' };
+  };
+
   const { data: expenses, isLoading } = useQuery({
     queryKey: ['expenses'],
     queryFn: () => financeService.getExpenses(),
@@ -132,9 +139,8 @@ export default function ExpensesPage() {
                       {expense.projects?.name}
                     </div>
                   </div>
-                  <Badge variant={expense.payment_status === 'paid' ? 'default' : 'destructive'}
-                         className={expense.payment_status === 'paid' ? 'bg-green-600 hover:bg-green-700' : ''}>
-                    {expense.payment_status}
+                  <Badge variant="outline" className={getExpenseStatus(expense).color}>
+                    {getExpenseStatus(expense).label}
                   </Badge>
                 </div>
 
@@ -145,12 +151,35 @@ export default function ExpensesPage() {
 
                 <div className="flex items-center justify-between pt-2 border-t">
                   <div className="flex items-center gap-2">
-                    {expense.receipt_url && (
-                      <Button size="sm" variant="ghost" className="h-7 px-2 text-blue-600" asChild>
-                        <a href={expense.receipt_url} target="_blank" rel="noreferrer">
-                          <Receipt className="h-3.5 w-3.5 mr-1" /> Receipt
-                        </a>
-                      </Button>
+                    {expense.bill_photo_url && (
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button size="sm" variant="ghost" className="h-7 px-2 text-blue-600">
+                            <Receipt className="h-3.5 w-3.5 mr-1" /> View Bill
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-2xl">
+                          <DialogHeader>
+                            <DialogTitle>Bill Photo / Receipt</DialogTitle>
+                          </DialogHeader>
+                          <div className="flex items-center justify-center p-4">
+                            {/* Use standard img tag or iframe for PDF */}
+                            {expense.bill_photo_url.toLowerCase().endsWith('.pdf') ? (
+                              <iframe src={expense.bill_photo_url} className="w-full h-[60vh] border-0" />
+                            ) : (
+                              <div className="relative w-full h-[60vh] sm:h-[70vh]">
+                                <Image 
+                                  src={expense.bill_photo_url} 
+                                  alt="Bill" 
+                                  fill
+                                  className="object-contain rounded-md" 
+                                  sizes="(max-width: 768px) 100vw, 800px"
+                                />
+                              </div>
+                            )}
+                          </div>
+                        </DialogContent>
+                      </Dialog>
                     )}
                   </div>
                   <div className="text-lg font-bold">
@@ -213,10 +242,34 @@ export default function ExpensesPage() {
                     {expense.vendors?.name || <span className="text-muted-foreground italic">None</span>}
                   </TableCell>
                   <TableCell>
-                    {expense.receipt_url ? (
-                      <a href={expense.receipt_url} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline text-sm font-medium">
-                        View
-                      </a>
+                    {expense.bill_photo_url ? (
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <button className="text-blue-600 hover:underline text-sm font-medium focus:outline-none">
+                            View
+                          </button>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-2xl">
+                          <DialogHeader>
+                            <DialogTitle>Bill Photo / Receipt</DialogTitle>
+                          </DialogHeader>
+                          <div className="flex items-center justify-center p-4">
+                            {expense.bill_photo_url.toLowerCase().endsWith('.pdf') ? (
+                              <iframe src={expense.bill_photo_url} className="w-full h-[60vh] border-0" />
+                            ) : (
+                              <div className="relative w-full h-[60vh] sm:h-[70vh]">
+                                <Image 
+                                  src={expense.bill_photo_url} 
+                                  alt="Bill" 
+                                  fill
+                                  className="object-contain rounded-md" 
+                                  sizes="(max-width: 768px) 100vw, 800px"
+                                />
+                              </div>
+                            )}
+                          </div>
+                        </DialogContent>
+                      </Dialog>
                     ) : (
                       <span className="text-muted-foreground text-sm">-</span>
                     )}
@@ -225,9 +278,8 @@ export default function ExpensesPage() {
                     ₹{expense.amount?.toLocaleString()}
                   </TableCell>
                   <TableCell>
-                    <Badge variant={expense.payment_status === 'paid' ? 'default' : 'destructive'}
-                           className={expense.payment_status === 'paid' ? 'bg-green-600 hover:bg-green-700' : ''}>
-                      {expense.payment_status}
+                    <Badge variant="outline" className={getExpenseStatus(expense).color}>
+                      {getExpenseStatus(expense).label}
                     </Badge>
                   </TableCell>
                   {canManageFunds && (

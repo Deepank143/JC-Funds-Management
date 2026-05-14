@@ -1,6 +1,18 @@
 import { ProjectDetail, ProjectPnL, MilestoneStats, DashboardKPIs, ProjectSummary, DashboardAlert, IncomeRecord, ExpenseRecord, Vendor, Client, Milestone, ExpenseCategory, ExpenseSubcategory, ProjectInsights } from '../types';
 import { intelligenceService } from './intelligenceService';
 
+async function handleResponse(res: Response, defaultErrorMessage: string) {
+  if (!res.ok) {
+    let errorMessage = defaultErrorMessage;
+    try {
+      const errorData = await res.json();
+      if (errorData.error) errorMessage = errorData.error;
+    } catch (e) {}
+    throw new Error(errorMessage);
+  }
+  return res.json();
+}
+
 export const financeService = {
   /**
    * Fetches project insights from the intelligence engine
@@ -15,8 +27,7 @@ export const financeService = {
    */
   async getProjectDetail(id: string): Promise<ProjectDetail> {
     const res = await fetch(`/api/projects/${id}`);
-    if (!res.ok) throw new Error('Failed to fetch project');
-    return res.json();
+    return handleResponse(res, 'Failed to fetch project');
   },
 
   /**
@@ -24,8 +35,7 @@ export const financeService = {
    */
   async getProjectPnL(id: string): Promise<ProjectPnL> {
     const res = await fetch(`/api/projects/${id}/pnl`);
-    if (!res.ok) throw new Error('Failed to fetch P&L');
-    return res.json();
+    return handleResponse(res, 'Failed to fetch P&L');
   },
 
   /**
@@ -33,8 +43,7 @@ export const financeService = {
    */
   async getDashboardKPIs(): Promise<DashboardKPIs> {
     const res = await fetch('/api/dashboard/summary');
-    if (!res.ok) throw new Error('Failed to fetch dashboard data');
-    return res.json();
+    return handleResponse(res, 'Failed to fetch dashboard data');
   },
 
   /**
@@ -43,8 +52,7 @@ export const financeService = {
   async getProjects(status?: string): Promise<ProjectSummary[]> {
     const url = status ? `/api/projects?status=${status}` : '/api/projects';
     const res = await fetch(url);
-    if (!res.ok) throw new Error('Failed to fetch projects');
-    return res.json();
+    return handleResponse(res, 'Failed to fetch projects');
   },
 
   /**
@@ -59,8 +67,7 @@ export const financeService = {
    */
   async getDashboardAlerts(): Promise<DashboardAlert[]> {
     const res = await fetch('/api/dashboard/alerts');
-    if (!res.ok) throw new Error('Failed to fetch alerts');
-    return res.json();
+    return handleResponse(res, 'Failed to fetch alerts');
   },
 
   /**
@@ -68,8 +75,7 @@ export const financeService = {
    */
   async getIncomeHistory(): Promise<IncomeRecord[]> {
     const res = await fetch('/api/income');
-    if (!res.ok) throw new Error('Failed to fetch income records');
-    return res.json();
+    return handleResponse(res, 'Failed to fetch income records');
   },
 
   /**
@@ -77,8 +83,7 @@ export const financeService = {
    */
   async getExpenses(): Promise<ExpenseRecord[]> {
     const res = await fetch('/api/expenses');
-    if (!res.ok) throw new Error('Failed to fetch expenses');
-    return res.json();
+    return handleResponse(res, 'Failed to fetch expenses');
   },
 
   /**
@@ -90,8 +95,7 @@ export const financeService = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     });
-    if (!res.ok) throw new Error('Failed to settle expense');
-    return res.json();
+    return handleResponse(res, 'Failed to settle expense');
   },
 
   /**
@@ -99,8 +103,7 @@ export const financeService = {
    */
   async getVendors(): Promise<Vendor[]> {
     const res = await fetch('/api/vendors');
-    if (!res.ok) throw new Error('Failed to fetch vendors');
-    return res.json();
+    return handleResponse(res, 'Failed to fetch vendors');
   },
 
   /**
@@ -109,8 +112,7 @@ export const financeService = {
   async getClients(search?: string): Promise<Client[]> {
     const url = search ? `/api/clients?search=${encodeURIComponent(search)}` : '/api/clients';
     const res = await fetch(url);
-    if (!res.ok) throw new Error('Failed to fetch clients');
-    return res.json();
+    return handleResponse(res, 'Failed to fetch clients');
   },
 
   /**
@@ -118,8 +120,7 @@ export const financeService = {
    */
   async getMilestones(projectId: string): Promise<Milestone[]> {
     const res = await fetch(`/api/milestones?project_id=${projectId}`);
-    if (!res.ok) throw new Error('Failed to fetch milestones');
-    return res.json();
+    return handleResponse(res, 'Failed to fetch milestones');
   },
 
   /**
@@ -131,11 +132,7 @@ export const financeService = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ milestones, contractValue }),
     });
-    if (!res.ok) {
-      const error = await res.json();
-      throw new Error(error.error || 'Failed to update schedule');
-    }
-    return res.json();
+    return handleResponse(res, 'Failed to update schedule');
   },
 
   /**
@@ -143,8 +140,7 @@ export const financeService = {
    */
   async getExpenseCategories(): Promise<ExpenseCategory[]> {
     const res = await fetch('/api/expenses/categories');
-    if (!res.ok) throw new Error('Failed to fetch categories');
-    return res.json();
+    return handleResponse(res, 'Failed to fetch categories');
   },
 
   /**
@@ -152,8 +148,7 @@ export const financeService = {
    */
   async getExpenseSubcategories(categoryId: string): Promise<ExpenseSubcategory[]> {
     const res = await fetch(`/api/expenses/subcategories?category_id=${categoryId}`);
-    if (!res.ok) throw new Error('Failed to fetch subcategories');
-    return res.json();
+    return handleResponse(res, 'Failed to fetch subcategories');
   },
 
   /**
@@ -165,8 +160,7 @@ export const financeService = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     });
-    if (!res.ok) throw new Error('Failed to record income');
-    return res.json();
+    return handleResponse(res, 'Failed to record income');
   },
 
   /**
@@ -178,8 +172,7 @@ export const financeService = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     });
-    if (!res.ok) throw new Error('Failed to record expense');
-    return res.json();
+    return handleResponse(res, 'Failed to record expense');
   },
 
   /**
@@ -191,8 +184,7 @@ export const financeService = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     });
-    if (!res.ok) throw new Error('Failed to create project');
-    return res.json();
+    return handleResponse(res, 'Failed to create project');
   },
 
   /**
@@ -204,8 +196,7 @@ export const financeService = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     });
-    if (!res.ok) throw new Error('Failed to update project');
-    return res.json();
+    return handleResponse(res, 'Failed to update project');
   },
 
   /**
@@ -217,8 +208,7 @@ export const financeService = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     });
-    if (!res.ok) throw new Error('Failed to create client');
-    return res.json();
+    return handleResponse(res, 'Failed to create client');
   },
 
   /**
@@ -230,8 +220,7 @@ export const financeService = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     });
-    if (!res.ok) throw new Error('Failed to update client');
-    return res.json();
+    return handleResponse(res, 'Failed to update client');
   },
 
   /**
@@ -243,8 +232,7 @@ export const financeService = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     });
-    if (!res.ok) throw new Error('Failed to create vendor');
-    return res.json();
+    return handleResponse(res, 'Failed to create vendor');
   },
 
   /**
@@ -256,8 +244,7 @@ export const financeService = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ...data, correction_reason: reason }),
     });
-    if (!res.ok) throw new Error('Failed to correct income entry');
-    return res.json();
+    return handleResponse(res, 'Failed to correct income entry');
   },
 
   /**
@@ -269,8 +256,7 @@ export const financeService = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ...data, correction_reason: reason }),
     });
-    if (!res.ok) throw new Error('Failed to correct expense entry');
-    return res.json();
+    return handleResponse(res, 'Failed to correct expense entry');
   },
 
   /**
@@ -278,8 +264,7 @@ export const financeService = {
    */
   async getSettlementGaps(projectId: string): Promise<any> {
     const res = await fetch(`/api/projects/${projectId}/settlement-gaps`);
-    if (!res.ok) throw new Error('Failed to fetch settlement gaps');
-    return res.json();
+    return handleResponse(res, 'Failed to fetch settlement gaps');
   },
 
   /**
@@ -291,8 +276,7 @@ export const financeService = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     });
-    if (!res.ok) throw new Error('Failed to finalize settlement');
-    return res.json();
+    return handleResponse(res, 'Failed to finalize settlement');
   },
 
   /**
@@ -304,8 +288,7 @@ export const financeService = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
     });
-    if (!res.ok) throw new Error('Failed to update vendor');
-    return res.json();
+    return handleResponse(res, 'Failed to update vendor');
   },
 
   /**

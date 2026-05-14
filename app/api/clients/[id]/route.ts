@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { getServerClient } from '@/lib/supabase';
+import { checkRole } from '@/lib/auth-utils';
 
 // GET /api/clients/[id] - Get client detail with projects
 export async function GET(
@@ -8,9 +9,8 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const supabase = getServerClient();
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const { error: authError, supabase, session } = await checkRole(['owner', 'accountant', 'viewer']);
+    if (authError) return authError;
     const { id } = params;
 
     const { data: rawClient, error: clientError } = await supabase
@@ -26,7 +26,7 @@ export async function GET(
       .eq('id', id)
       .single();
 
-    const client = rawClient as any;
+    const client = rawClient ;
 
     if (clientError) throw clientError;
     if (!client) {
@@ -70,13 +70,12 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
-    const supabase = getServerClient();
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const { error: authError, supabase, session } = await checkRole(['owner', 'accountant']);
+    if (authError) return authError;
     const { id } = params;
     const body = await request.json();
 
-    const { data, error } = await (supabase.from('clients') as any)
+    const { data, error } = await (supabase.from('clients') )
       .update({
         name: body.name,
         contact_person: body.contact_person,

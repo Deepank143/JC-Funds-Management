@@ -1,13 +1,13 @@
 export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { getServerClient } from '@/lib/supabase';
+import { checkRole } from '@/lib/auth-utils';
 
 // GET /api/clients - List all clients with project counts
 export async function GET(request: Request) {
   try {
-    const supabase = getServerClient();
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const { error: authError, supabase, session } = await checkRole(['owner', 'accountant', 'viewer']);
+    if (authError) return authError;
 
     const { searchParams } = new URL(request.url);
     const search = searchParams.get('search');
@@ -49,14 +49,12 @@ export async function GET(request: Request) {
 // POST /api/clients - Create new client
 export async function POST(request: Request) {
   try {
-    const supabase = getServerClient();
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const { error: authError, supabase, session } = await checkRole(['owner', 'accountant']);
+    if (authError) return authError;
 
     const body = await request.json();
 
-    const { data, error } = await supabase
-      .from('clients')
+    const { data, error } = await (supabase.from('clients') )
       .insert({
         name: body.name,
         contact_person: body.contact_person,
@@ -66,7 +64,7 @@ export async function POST(request: Request) {
         gstin: body.gstin,
         notes: body.notes,
         created_by: session.user.id,
-      } as any)
+      })
       .select()
       .single();
 

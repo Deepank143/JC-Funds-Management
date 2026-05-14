@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { getServerClient } from '@/lib/supabase';
+import { checkRole } from '@/lib/auth-utils';
 
 // GET /api/clients/[id]/statement - Full payment statement
 export async function GET(
@@ -8,9 +9,8 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const supabase = getServerClient();
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const { error: authError, supabase, session } = await checkRole(['owner', 'accountant', 'viewer']);
+    if (authError) return authError;
     const { id } = params;
 
     // Get client with all projects and income

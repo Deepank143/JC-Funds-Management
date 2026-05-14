@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { getServerClient } from '@/lib/supabase';
+import { checkRole } from '@/lib/auth-utils';
 
 // PATCH /api/milestones/[id] - Update milestone status
 export async function PATCH(
@@ -8,13 +9,8 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
-    const supabase = getServerClient() as any;
-    
-    // Auth check
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const { error: authError, supabase, session } = await checkRole(['owner', 'accountant']);
+    if (authError) return authError;
 
     const { id } = params;
     const body = await request.json();
@@ -26,8 +22,7 @@ export async function PATCH(
     if (body.amount !== undefined) updateData.amount = body.amount;
     if (body.due_date !== undefined) updateData.due_date = body.due_date;
 
-    const { data, error } = await supabase
-      .from('milestones')
+    const { data, error } = await (supabase.from('milestones') )
       .update(updateData)
       .eq('id', id)
       .select()

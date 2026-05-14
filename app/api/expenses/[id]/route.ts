@@ -1,16 +1,12 @@
 export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { getServerClient } from '@/lib/supabase';
+import { checkRole } from '@/lib/auth-utils';
 
 export async function PUT(request: Request, { params }: { params: { id: string } }) {
   try {
-    const supabase = getServerClient() as any;
-    
-    // Add auth check
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const { error: authError, supabase, session } = await checkRole(['owner', 'accountant']);
+    if (authError) return authError;
 
     const body = await request.json();
     const id = params.id;
@@ -19,14 +15,13 @@ export async function PUT(request: Request, { params }: { params: { id: string }
         return NextResponse.json({ error: 'Expense ID is required' }, { status: 400 });
     }
 
-    const { data, error } = await supabase
-      .from('expenses')
+    const { data, error } = await (supabase.from('expenses') )
       .update({
         payment_status: 'paid',
         amount_paid: body.amount,
         payment_mode: body.payment_mode,
         reference_number: body.reference_number,
-      } as any)
+      })
       .eq('id', id)
       .select()
       .single();

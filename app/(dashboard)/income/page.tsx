@@ -22,6 +22,18 @@ import { IncomeRecord } from '@/lib/types';
 export default function IncomePage() {
   const { canWrite } = useAdmin();
 
+  const getIncomeStatus = (record: IncomeRecord) => {
+    if (!record.milestones) return { label: 'Received', color: 'bg-emerald-500 text-white hover:bg-emerald-600 border-transparent' };
+    const m = record.milestones;
+    if (m.status === 'paid') return { label: 'Received', color: 'bg-emerald-500 text-white hover:bg-emerald-600 border-transparent' };
+    
+    if (m.due_date && new Date(m.due_date) < new Date() && m.status !== 'paid') {
+      return { label: 'Payment Overdue', color: 'bg-red-500 hover:bg-red-600 text-white border-transparent' };
+    }
+    
+    return { label: 'Partial', color: 'bg-yellow-500 hover:bg-yellow-600 text-white border-transparent' };
+  };
+
   const { data: income, isLoading } = useQuery({
     queryKey: ['income'],
     queryFn: () => financeService.getIncomeHistory(),
@@ -58,8 +70,8 @@ export default function IncomePage() {
                       ₹{record.amount?.toLocaleString()}
                     </div>
                   </div>
-                  <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200">
-                    Received
+                  <Badge variant="outline" className={getIncomeStatus(record).color}>
+                    {getIncomeStatus(record).label}
                   </Badge>
                 </div>
 
@@ -106,18 +118,19 @@ export default function IncomePage() {
               <TableHead>Milestone</TableHead>
               <TableHead>Mode / Ref</TableHead>
               <TableHead className="text-right">Amount</TableHead>
+              <TableHead>Status</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={5} className="h-24 text-center">
+                <TableCell colSpan={6} className="h-24 text-center">
                   <Loader2 className="mx-auto h-6 w-6 animate-spin text-muted-foreground" />
                 </TableCell>
               </TableRow>
             ) : !income?.length ? (
               <TableRow>
-                <TableCell colSpan={5} className="h-24 text-center">
+                <TableCell colSpan={6} className="h-24 text-center">
                   No income records found.
                 </TableCell>
               </TableRow>
@@ -146,6 +159,11 @@ export default function IncomePage() {
                   </TableCell>
                   <TableCell className="text-right font-medium text-green-600">
                     ₹{record.amount?.toLocaleString()}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className={getIncomeStatus(record).color}>
+                      {getIncomeStatus(record).label}
+                    </Badge>
                   </TableCell>
                 </TableRow>
               ))

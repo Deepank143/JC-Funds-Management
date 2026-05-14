@@ -1,16 +1,12 @@
 export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { getServerClient } from '@/lib/supabase';
+import { checkRole } from '@/lib/auth-utils';
 
 export async function GET() {
   try {
-    const supabase = getServerClient() as any;
-    
-    // Add auth check
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const { error: authError, supabase, session } = await checkRole(['owner', 'accountant', 'viewer']);
+    if (authError) return authError;
 
     const { data, error } = await supabase
       .from('vendors')
@@ -31,18 +27,12 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const supabase = getServerClient() as any;
-    
-    // Add auth check
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const { error: authError, supabase, session } = await checkRole(['owner', 'accountant']);
+    if (authError) return authError;
 
     const body = await request.json();
 
-    const { data, error } = await supabase
-      .from('vendors')
+    const { data, error } = await (supabase.from('vendors') )
       .insert({
         name: body.name,
         type: body.type || 'vendor',
@@ -53,7 +43,7 @@ export async function POST(request: Request) {
         subcategory_id: body.subcategory_id,
         notes: body.notes,
         created_by: session.user.id,
-      } as any)
+      })
       .select()
       .single();
 

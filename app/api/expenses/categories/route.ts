@@ -1,16 +1,12 @@
 export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { getServerClient } from '@/lib/supabase';
+import { checkRole } from '@/lib/auth-utils';
 
 export async function GET() {
   try {
-    const supabase = getServerClient() as any;
-    
-    // Add auth check
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const { error: authError, supabase, session } = await checkRole(['owner', 'accountant', 'viewer']);
+    if (authError) return authError;
 
     const { data, error } = await supabase
       .from('expense_categories')

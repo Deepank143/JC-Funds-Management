@@ -100,7 +100,7 @@ export function ExpenseForm() {
   });
 
   const mutation = useMutation({
-    mutationFn: async (data: ExpenseFormData & { receipt_url?: string }) => {
+    mutationFn: async (data: ExpenseFormData & { bill_photo_url?: string }) => {
       // Safety check: if user tries to submit 'paid' without permission
       if (!canManageFunds && data.payment_status !== 'unpaid') {
         throw new Error('Unauthorized: Only Admin can authorize payments.');
@@ -159,7 +159,7 @@ export function ExpenseForm() {
 
       mutation.mutate({ 
         ...data, 
-        receipt_url: receipt_url || undefined,
+        bill_photo_url: receipt_url || undefined,
         amount_paid: data.payment_status === 'paid' ? data.amount : data.amount_paid
       });
     } catch (error) {

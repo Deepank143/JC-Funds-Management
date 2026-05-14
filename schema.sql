@@ -152,24 +152,6 @@ CREATE TABLE expenses (
 );
 
 -- ============================================================
--- LABOUR ATTENDANCE (Phase 2)
--- ============================================================
-CREATE TABLE labour_attendance (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  project_id UUID REFERENCES projects(id) ON DELETE CASCADE,
-  vendor_id UUID REFERENCES vendors(id) ON DELETE CASCADE,
-  date DATE NOT NULL,
-  present BOOLEAN DEFAULT TRUE,
-  hours_worked DECIMAL(4,1) DEFAULT 8.0,
-  daily_wage DECIMAL(10,2),
-  overtime_hours DECIMAL(4,1) DEFAULT 0,
-  overtime_rate DECIMAL(10,2) DEFAULT 0,
-  notes TEXT,
-  created_by UUID REFERENCES profiles(id),
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- ============================================================
 -- PROJECT BUDGETS (for tracking budget vs actual)
 -- ============================================================
 CREATE TABLE project_budgets (
@@ -230,7 +212,6 @@ ALTER TABLE milestones ENABLE ROW LEVEL SECURITY;
 ALTER TABLE vendors ENABLE ROW LEVEL SECURITY;
 ALTER TABLE income ENABLE ROW LEVEL SECURITY;
 ALTER TABLE expenses ENABLE ROW LEVEL SECURITY;
-ALTER TABLE labour_attendance ENABLE ROW LEVEL SECURITY;
 ALTER TABLE project_budgets ENABLE ROW LEVEL SECURITY;
 
 -- Profiles: Users can view all profiles, update own
@@ -313,15 +294,6 @@ CREATE POLICY "Milestones viewable by all authenticated" ON milestones
   FOR SELECT USING (auth.role() = 'authenticated');
 
 CREATE POLICY "Milestones modifiable by owner and accountant" ON milestones
-  FOR ALL USING (
-    EXISTS (SELECT 1 FROM profiles WHERE profiles.id = auth.uid() AND profiles.role IN ('owner', 'accountant'))
-  );
-
--- Labour Attendance: Viewable by all authenticated, modifiable by owner/accountant
-CREATE POLICY "Labour attendance viewable by all authenticated" ON labour_attendance
-  FOR SELECT USING (auth.role() = 'authenticated');
-
-CREATE POLICY "Labour attendance modifiable by owner and accountant" ON labour_attendance
   FOR ALL USING (
     EXISTS (SELECT 1 FROM profiles WHERE profiles.id = auth.uid() AND profiles.role IN ('owner', 'accountant'))
   );

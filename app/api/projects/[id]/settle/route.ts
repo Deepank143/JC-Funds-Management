@@ -13,8 +13,7 @@ export async function POST(
     const body = await request.json();
 
     // 1. Mark project as completed with actual end date
-    const { error: projectError } = await supabase
-      .from('projects')
+    const { error: projectError } = await (supabase.from('projects') )
       .update({
         status: 'completed',
         actual_end_date: new Date().toISOString().split('T')[0],
@@ -26,8 +25,7 @@ export async function POST(
 
     // ISSUE-06 FIX: Mark all non-paid milestones as 'paid' (write-off on settlement).
     // Without this, dashboard alerts keep firing for milestones on a closed project.
-    const { error: milestoneError } = await supabase
-      .from('milestones')
+    const { error: milestoneError } = await (supabase.from('milestones') )
       .update({ status: 'paid' })
       .eq('project_id', projectId)
       .neq('status', 'paid'); // Only update the ones that aren't already paid
@@ -38,8 +36,7 @@ export async function POST(
     }
 
     // 2. Mark all outstanding expenses as written off (partial -> paid with write-off note)
-    await supabase
-      .from('expenses')
+    await (supabase.from('expenses') )
       .update({
         payment_status: 'paid',
         notes: 'Written off during project settlement',
@@ -48,7 +45,7 @@ export async function POST(
       .in('payment_status', ['unpaid', 'partial']);
 
     // 3. Log settlement event in audit trail
-    await supabase.from('audit_logs').insert({
+    await (supabase.from('audit_logs') ).insert({
       table_name: 'projects',
       record_id: projectId,
       action: 'SETTLEMENT',

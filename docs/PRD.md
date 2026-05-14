@@ -153,7 +153,7 @@ REALIZED PROFIT: ₹  4,85,000 (received − paid expenses)
 ### 3.5 Module E: Vendor & Labour Ledger
 
 - **Vendor Statement:** Opening balance → All bills → All payments → Closing balance
-- **Labour Register:** Name, daily wage rate, attendance log (Phase 2), weekly wage calculation, advance tracking
+- **Labour / Broker Ledger:** Basic ledger for payments to labour contractors/brokers, advance tracking
 - **Broker Commission:** Auto-calculated as % of labour cost or flat fee per placement
 
 ### 3.6 Module F: Reports & Exports (Phase 1 MVP)
@@ -284,17 +284,6 @@ create table expenses (
   created_at timestamptz default now()
 );
 
--- Labour Attendance (Phase 2)
-create table labour_attendance (
-  id uuid primary key default gen_random_uuid(),
-  project_id uuid references projects(id),
-  vendor_id uuid references vendors(id),
-  date date not null,
-  present boolean default true,
-  hours_worked decimal(4,1) default 8.0,
-  daily_wage decimal(10,2),
-  created_at timestamptz default now()
-);
 ```
 
 ### 4.2 Seed Data
@@ -643,7 +632,7 @@ async def generate_pnl(project_id: str):
 |----------|---------|--------|
 | P0 | **Module H**: Milestone Intelligence Engine | ✅ Done |
 | P0 | **Module I**: Back Entry & Financial Amendment System | ✅ Done |
-| P1 | Labour attendance | 📋 Backlog |
+
 | P1 | Photo upload for bills | 📋 Backlog |
 
 ---

@@ -1,13 +1,13 @@
 export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { getServerClient } from '@/lib/supabase';
+import { checkRole } from '@/lib/auth-utils';
 
 // GET /api/projects - List all projects
 export async function GET(request: Request) {
   try {
-    const supabase = getServerClient() as any;
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const { error: authError, supabase, session } = await checkRole(['owner', 'accountant', 'viewer']);
+    if (authError) return authError;
     
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
@@ -37,7 +37,7 @@ export async function GET(request: Request) {
     }
 
     // Filter RPC results if needed
-    let filtered = projectsWithMargins;
+    let filtered = projectsWithMargins ;
     if (status && status !== 'all') {
       filtered = filtered.filter((p: any) => p.status === status);
     }
@@ -58,14 +58,12 @@ export async function GET(request: Request) {
 // POST /api/projects - Create new project
 export async function POST(request: Request) {
   try {
-    const supabase = getServerClient() as any;
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const { error: authError, supabase, session } = await checkRole(['owner', 'accountant']);
+    if (authError) return authError;
 
     const body = await request.json();
 
-    const { data: project, error: projectError } = await supabase
-      .from('projects')
+    const { data: project, error: projectError } = await (supabase.from('projects') )
       .insert({
         client_id: body.client_id,
         name: body.name,
@@ -76,7 +74,7 @@ export async function POST(request: Request) {
         expected_end_date: body.expected_end_date,
         status: 'active',
         created_by: session.user.id,
-      } as any)
+      })
       .select()
       .single();
 
@@ -93,9 +91,8 @@ export async function POST(request: Request) {
         sort_order: index,
       }));
 
-      const { error: milestoneError } = await supabase
-        .from('milestones')
-        .insert(milestones as any);
+      const { error: milestoneError } = await (supabase.from('milestones') )
+        .insert(milestones);
 
       if (milestoneError) throw milestoneError;
     }

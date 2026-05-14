@@ -36,13 +36,21 @@ const incomeSchema = z.object({
 
 type IncomeFormData = z.infer<typeof incomeSchema>;
 
-export function IncomeForm() {
+interface IncomeFormProps {
+  defaultProjectId?: string;
+  defaultMilestoneId?: string;
+  triggerElement?: React.ReactNode;
+}
+
+export function IncomeForm({ defaultProjectId, defaultMilestoneId, triggerElement }: IncomeFormProps = {}) {
   const [open, setOpen] = useState(false);
   const queryClient = useQueryClient();
 
   const { register, handleSubmit, watch, setValue, formState: { errors }, reset } = useForm<IncomeFormData>({
     resolver: zodResolver(incomeSchema),
     defaultValues: {
+      project_id: defaultProjectId || undefined,
+      milestone_id: defaultMilestoneId || undefined,
       payment_date: new Date().toISOString().split('T')[0],
       payment_mode: 'bank_transfer',
     },
@@ -103,10 +111,12 @@ export function IncomeForm() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button>
-          <Plus className="mr-2 h-4 w-4" />
-          Record Income
-        </Button>
+        {triggerElement || (
+          <Button>
+            <Plus className="mr-2 h-4 w-4" />
+            Record Income
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>

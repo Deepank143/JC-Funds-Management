@@ -38,8 +38,7 @@ export async function PATCH(
     }
 
     // 2. Perform update
-    const { data: updatedData, error: updateError } = await supabase
-      .from('income')
+    const { data: updatedData, error: updateError } = await (supabase.from('income') )
       .update({
         amount: body.amount,
         payment_date: body.payment_date,
@@ -55,7 +54,7 @@ export async function PATCH(
     if (updateError) throw updateError;
 
     // 3. Log to audit_logs
-    await supabase.from('audit_logs').insert({
+    await (supabase.from('audit_logs') ).insert({
       table_name: 'income',
       record_id: incomeId,
       action: 'UPDATE',

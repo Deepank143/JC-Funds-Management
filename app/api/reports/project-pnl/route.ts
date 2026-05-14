@@ -1,13 +1,13 @@
 export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { getServerClient } from '@/lib/supabase';
+import { checkRole } from '@/lib/auth-utils';
 
 // GET /api/reports/project-pnl
 export async function GET(request: Request) {
   try {
-    const supabase = getServerClient() as any;
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const { error: authError, supabase, session } = await checkRole(['owner', 'accountant', 'viewer']);
+    if (authError) return authError;
 
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status') || 'active';
@@ -34,7 +34,7 @@ export async function GET(request: Request) {
 
     if (expensesError) throw expensesError;
 
-    const report = projects.map((project: any) => {
+    const report = (projects ).map((project: any) => {
       const projectIncome = income
         .filter((i: any) => i.project_id === project.id)
         .reduce((sum: number, i: any) => sum + (i.amount || 0), 0);

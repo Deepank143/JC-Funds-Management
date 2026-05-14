@@ -1,30 +1,20 @@
 export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
+import { getServerClient } from '@/lib/supabase';
+import { checkRole } from '@/lib/auth-utils';
 
 export async function GET() {
   try {
-    const cookieStore = cookies();
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
-    
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const { error: authError, supabase, profile } = await checkRole(['owner', 'accountant', 'viewer']);
+    if (authError) return authError;
 
-    // Fetch user profile to check role
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', session.user.id)
-      .single();
-
-    const isAuthorized = profile?.role === 'owner' || profile?.role === 'accountant';
+    const isAuthorized = (profile )?.role === 'owner' || (profile )?.role === 'accountant';
 
     // Call the database function for consistent KPIs
-    const { data: kpis, error: kpiError } = await (supabase as any).rpc('get_dashboard_kpis');
+    const { data: kpis, error: kpiError } = await supabase.rpc('get_dashboard_kpis');
     if (kpiError) throw kpiError;
 
-    const summary = kpis?.[0] || {};
+    const summary = (kpis )?.[0] || {};
 
     // Filter sensitive data based on role
     return NextResponse.json({

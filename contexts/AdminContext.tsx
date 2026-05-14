@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 
 type UserRole = 'owner' | 'accountant' | 'viewer';
@@ -36,7 +36,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   const [userName, setUserName] = useState('User');
   const [userEmail, setUserEmail] = useState('');
 
-  const fetchProfile = async () => {
+  const fetchProfile = useCallback(async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) {
@@ -75,7 +75,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [supabase]);
 
   useEffect(() => {
     fetchProfile();
@@ -95,7 +95,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     return () => {
       subscription.unsubscribe();
     };
-  }, []);
+  }, [fetchProfile, supabase]);
 
   const toggleAdminMode = () => {
     if (userRole === 'owner') {

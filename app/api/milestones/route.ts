@@ -1,13 +1,13 @@
 export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { getServerClient } from '@/lib/supabase';
+import { checkRole } from '@/lib/auth-utils';
 
 // GET /api/milestones?project_id=xxx - List milestones for project
 export async function GET(request: Request) {
   try {
-    const supabase = getServerClient();
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const { error: authError, supabase, session } = await checkRole(['owner', 'accountant', 'viewer']);
+    if (authError) return authError;
     const { searchParams } = new URL(request.url);
     const projectId = searchParams.get('project_id');
 
@@ -39,9 +39,8 @@ export async function GET(request: Request) {
 // POST /api/milestones - Create milestone
 export async function POST(request: Request) {
   try {
-    const supabase = getServerClient();
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const { error: authError, supabase, session } = await checkRole(['owner', 'accountant']);
+    if (authError) return authError;
     const body = await request.json();
 
     // Auto-calculate amount from percentage if contract value provided
@@ -50,8 +49,7 @@ export async function POST(request: Request) {
       amount = (body.percentage * body.contract_value) / 100;
     }
 
-    const { data, error } = await supabase
-      .from('milestones')
+    const { data, error } = await (supabase.from('milestones') )
       .insert({
         project_id: body.project_id,
         name: body.name,
@@ -60,7 +58,7 @@ export async function POST(request: Request) {
         due_date: body.due_date,
         sort_order: body.sort_order || 0,
         status: 'pending',
-      } as any)
+      })
       .select()
       .single();
 

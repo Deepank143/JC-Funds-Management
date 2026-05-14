@@ -6,9 +6,8 @@ import { checkRole } from '@/lib/auth-utils';
 // GET /api/expenses - List expenses with filters
 export async function GET(request: Request) {
   try {
-    const supabase = getServerClient() as any;
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const { error: authError, supabase } = await checkRole(['owner', 'accountant', 'viewer']);
+    if (authError) return authError;
 
     const { searchParams } = new URL(request.url);
     const projectId = searchParams.get('project_id');
@@ -47,20 +46,12 @@ export async function GET(request: Request) {
 // POST /api/expenses - Create new expense
 export async function POST(request: Request) {
   try {
-    const supabase = getServerClient() as any;
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const { error: authError, supabase, session } = await checkRole(['owner', 'accountant']);
+    if (authError) return authError;
 
     const body = await request.json();
 
-    // Security check: Only owners and accountants can mark an expense as 'paid'
-    if (body.payment_status === 'paid' || (body.amount_paid && body.amount_paid > 0)) {
-      const { error: roleError } = await checkRole(['owner', 'accountant']);
-      if (roleError) return roleError;
-    }
-
-    const { data, error } = await supabase
-      .from('expenses')
+    const { data, error } = await (supabase.from('expenses') )
       .insert({
         project_id: body.project_id,
         category_id: body.category_id,
@@ -74,8 +65,9 @@ export async function POST(request: Request) {
         reference_number: body.reference_number,
         milestone_id: body.milestone_id,
         notes: body.notes,
+        bill_photo_url: body.bill_photo_url,
         created_by: session.user.id,
-      } as any)
+      })
       .select()
       .single();
 

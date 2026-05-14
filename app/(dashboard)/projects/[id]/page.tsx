@@ -20,6 +20,7 @@ import { MilestoneInsightCard } from '@/components/projects/MilestoneInsightCard
 import { AdminCorrectionModal } from '@/components/admin/AdminCorrectionModal';
 import { SettlementWizard } from '@/components/projects/SettlementWizard';
 import { financeService } from '@/lib/services/financeService';
+import { IncomeForm } from '@/components/forms/IncomeForm';
 import { ProjectDetail, ProjectPnL, MilestoneStats, ProjectInsights } from '@/lib/types';
 import { useState } from 'react';
 
@@ -117,6 +118,15 @@ export default function ProjectDetailPage() {
                   Run Settlement
                 </Button>
               )}
+              <IncomeForm 
+                defaultProjectId={projectId}
+                triggerElement={
+                  <Button size="sm" className="h-7 px-2 text-[10px] ml-2">
+                    <IndianRupee className="mr-1 h-3 w-3" />
+                    Record Income
+                  </Button>
+                }
+              />
             </div>
             <div className="flex items-center gap-3 mt-1 text-sm text-muted-foreground">
               <span className="flex items-center gap-1.5">
@@ -388,6 +398,19 @@ export default function ProjectDetailPage() {
                               {milestone.progress >= 100 ? 'Fully Paid' : 
                                milestone.progress > 0 ? 'Partially Paid' : 'Pending'}
                             </Badge>
+                            {milestone.progress < 100 && (
+                              <div className="mt-2">
+                                <IncomeForm 
+                                  defaultProjectId={projectId} 
+                                  defaultMilestoneId={milestone.id}
+                                  triggerElement={
+                                    <Button variant="outline" size="sm" className="h-6 px-2 text-[10px] w-full">
+                                      Pay Now
+                                    </Button>
+                                  }
+                                />
+                              </div>
+                            )}
                           </div>
                         </div>
 

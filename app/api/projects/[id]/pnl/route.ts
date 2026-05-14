@@ -13,7 +13,7 @@ export async function GET(
     if (error) return error;
 
     // Use the database function for summary
-    const { data: summary, error: summaryError } = await (supabase as any).rpc('get_project_summary', { project_uuid: id });
+    const { data: summary, error: summaryError } = await (supabase ).rpc('get_project_summary', { project_uuid: id });
 
     if (summaryError) throw summaryError;
 

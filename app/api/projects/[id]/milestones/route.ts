@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getServerClient } from '@/lib/supabase';
+import { checkRole } from '@/lib/auth-utils';
 
 // PUT /api/projects/[id]/milestones - Bulk update/sync milestones
 export async function PUT(
@@ -7,9 +8,8 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    const supabase = getServerClient() as any;
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const { error: authError, supabase, session } = await checkRole(['owner', 'accountant']);
+    if (authError) return authError;
 
     const projectId = params.id;
     const body = await request.json();
@@ -31,7 +31,7 @@ export async function PUT(
       .eq('project_id', projectId)
       .not('milestone_id', 'is', null);
 
-    const linkedMilestoneIds = new Set(linkedPayments?.map((p: any) => p.milestone_id) || []);
+    const linkedMilestoneIds = new Set((linkedPayments )?.map((p: any) => p.milestone_id) || []);
 
     // 2. Prepare new milestone data
     const milestonesToInsert = milestones.map((m: any, index: number) => ({
@@ -62,8 +62,7 @@ export async function PUT(
     // Identify milestones to delete: those NOT in the new list AND NOT linked to payments
     const incomingIds = new Set(milestonesToUpsert.map(m => m.id).filter(id => id));
     
-    const { error: deleteError } = await supabase
-      .from('milestones')
+    const { error: deleteError } = await (supabase.from('milestones') )
       .delete()
       .eq('project_id', projectId)
       .not('id', 'in', Array.from(incomingIds).length > 0 ? `(${Array.from(incomingIds).join(',')})` : '(NULL)')
@@ -75,9 +74,8 @@ export async function PUT(
     }
 
     // Upsert the new list
-    const { error: upsertError } = await supabase
-      .from('milestones')
-      .upsert(milestonesToUpsert as any);
+    const { error: upsertError } = await (supabase.from('milestones') )
+      .upsert(milestonesToUpsert );
 
     if (upsertError) {
       console.error('Upsert error:', upsertError);

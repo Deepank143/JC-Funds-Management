@@ -113,15 +113,15 @@ export interface IncomeRecord {
   notes?: string;
   projects?: { name: string };
   clients?: { name: string };
-  milestones?: { name: string };
+  milestones?: { name: string; percentage?: number; status?: string; due_date?: string };
 }
 
 export interface ExpenseRecord {
   id: string;
   amount: number;
   expense_date: string;
-  payment_status: 'paid' | 'pending';
-  receipt_url?: string;
+  payment_status: 'paid' | 'unpaid' | 'partial';
+  bill_photo_url?: string;
   projects?: { name: string };
   vendors?: { name: string };
   expense_categories?: { name: string };

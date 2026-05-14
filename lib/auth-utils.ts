@@ -1,6 +1,7 @@
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
+import { Database } from '@/types/supabase';
 
 export type UserRole = 'owner' | 'accountant' | 'viewer';
 
@@ -10,7 +11,7 @@ export type UserRole = 'owner' | 'accountant' | 'viewer';
  */
 export async function checkRole(allowedRoles: UserRole[]) {
   const cookieStore = cookies();
-  const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
+  const supabase = createRouteHandlerClient<Database>({ cookies: () => cookieStore });
 
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) {
@@ -23,7 +24,7 @@ export async function checkRole(allowedRoles: UserRole[]) {
     .eq('id', session.user.id)
     .single();
 
-  if (!profile || !allowedRoles.includes(profile.role as UserRole)) {
+  if (!profile || !allowedRoles.includes((profile as any).role as UserRole)) {
     return { 
       error: NextResponse.json(
         { error: `Forbidden: Requires one of roles [${allowedRoles.join(', ')}]` }, 

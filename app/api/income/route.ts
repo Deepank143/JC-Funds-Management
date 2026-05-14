@@ -19,7 +19,7 @@ export async function GET(request: Request) {
         *,
         projects(name),
         clients(name),
-        milestones(name, percentage)
+        milestones(name, percentage, status, due_date)
       `)
       .order('payment_date', { ascending: false });
 
@@ -49,7 +49,7 @@ export async function POST(request: Request) {
     const body = await request.json();
 
     // Use atomic RPC to handle income insert and milestone status update in one transaction
-    const { data, error: rpcError } = await supabase.rpc('record_income_with_milestone_update', {
+    const { data, error: rpcError } = await (supabase ).rpc('record_income_with_milestone_update', {
       p_project_id: body.project_id,
       p_client_id: body.client_id,
       p_milestone_id: body.milestone_id,

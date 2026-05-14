@@ -15,13 +15,13 @@ export interface AuditLogData {
  * Server-side service for managing the Audit Trail
  */
 export class AuditService {
-  constructor(private supabase: SupabaseClient<Database>) {}
+  constructor(private supabase: SupabaseClient<Database, 'public'>) {}
 
   /**
    * Logs an action to the audit_logs table
    */
   async logAction(data: AuditLogData) {
-    const { error } = await (this.supabase.from('audit_logs') as any).insert({
+    const { error } = await this.supabase.from('audit_logs').insert({
       table_name: data.table_name,
       record_id: data.record_id,
       action: data.action,

@@ -11,7 +11,7 @@ export class ProjectService {
   private auditService: AuditService;
 
   constructor(
-    private supabase: SupabaseClient<Database>,
+    private supabase: SupabaseClient<Database, 'public'>,
     options?: { adminMode?: boolean }
   ) {
     this.adminMode = options?.adminMode ?? false;

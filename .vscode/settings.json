@@ -1,4 +1,14 @@
 {
   "css.lint.unknownAtRules": "ignore",
-  "python.defaultInterpreterPath": "python"
+  "python.defaultInterpreterPath": "python",
+  "[mcp]": {
+    "git": {
+      "command": "D:\\DevTools\\NodeJS\\node.exe",
+      "args": ["--max-old-space-size=2048"],
+      "env": {
+        "PATH": "D:\\DevTools\\NodeJS;D:\\DevTools\\Git\\bin;D:\\DevTools\\Git\\cmd;D:\\DevTools\\npm-global;%PATH%",
+        "NODE_PATH": "D:\\DevTools\\npm-global\\node_modules"
+      }
+    }
+  }
 }

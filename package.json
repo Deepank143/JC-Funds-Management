@@ -8,7 +8,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "db:types": "supabase gen types typescript --project-id jcamyxlzvqcceygtmcoo --schema public > types/supabase.ts"
+    "db:types": "supabase gen types typescript --project-id jcamyxlzvqcceygtmcoo --schema public > types/supabase.ts",
+    "mcp:git": "node D:\\DevTools\\npm-global\\@modelcontextprotocol\\server-git\\dist\\index.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -43,6 +44,7 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
+    "@modelcontextprotocol/sdk": "^1.1.0",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@types/node": "^20.10.6",

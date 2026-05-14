@@ -31,23 +31,23 @@ export default function ProjectDetailPage() {
   const [correctionEntry, setCorrectionEntry] = useState<{ type: 'income' | 'expense'; data: any } | null>(null);
   const [isSettlementOpen, setIsSettlementOpen] = useState(false);
 
+  const { isOwner, isAdminMode } = useAdmin();
+  const showSensitiveData = isOwner ? isAdminMode : false;
+
   const { data: project, isLoading: projectLoading } = useQuery({
-    queryKey: ['project', projectId],
-    queryFn: () => financeService.getProjectDetail(projectId),
+    queryKey: ['project', projectId, isAdminMode],
+    queryFn: () => financeService.getProjectDetail(projectId, { isAdminMode }),
   });
 
   const { data: pnl, isLoading: pnlLoading } = useQuery({
-    queryKey: ['project-pnl', projectId],
-    queryFn: () => financeService.getProjectPnL(projectId),
+    queryKey: ['project-pnl', projectId, isAdminMode],
+    queryFn: () => financeService.getProjectPnL(projectId, { isAdminMode }),
   });
 
   const { data: insights, isLoading: insightsLoading } = useQuery({
-    queryKey: ['project-insights', projectId],
-    queryFn: () => financeService.getProjectInsights(projectId),
+    queryKey: ['project-insights', projectId, isAdminMode],
+    queryFn: () => financeService.getProjectInsights(projectId, { isAdminMode }),
   });
-
-  const { isOwner, isAdminMode } = useAdmin();
-  const showSensitiveData = isOwner ? isAdminMode : false;
 
   const isLoading = projectLoading || pnlLoading;
 

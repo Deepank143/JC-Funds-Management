@@ -13,6 +13,8 @@ export async function GET(request: Request) {
     const projectId = searchParams.get('project_id');
     const categoryId = searchParams.get('category_id');
     const paymentStatus = searchParams.get('payment_status');
+    const adminModeHeader = request.headers.get('x-admin-mode');
+    const isAdminMode = adminModeHeader === 'true';
 
     let query = supabase
       .from('expenses')
@@ -30,10 +32,19 @@ export async function GET(request: Request) {
     if (paymentStatus) query = query.eq('payment_status', paymentStatus);
 
     const { data, error } = await query;
-
     if (error) throw error;
 
-    return NextResponse.json(data);
+    let result = data;
+    if (!isAdminMode) {
+      result = (data || []).map(item => ({
+        ...item,
+        amount: 0,
+        amount_paid: 0,
+        notes: null
+      }));
+    }
+
+    return NextResponse.json(result);
   } catch (error) {
     console.error('Expenses fetch error:', error);
     return NextResponse.json(

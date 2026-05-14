@@ -10,15 +10,17 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatINR, getProfitColor } from '@/lib/utils';
 import { Building2, MapPin, Calendar, ArrowRight, IndianRupee } from 'lucide-react';
+import { useAdmin } from '@/contexts/AdminContext';
 import { financeService } from '@/lib/services/financeService';
 
 export default function ProjectsPage() {
   const router = useRouter();
   const [filter, setFilter] = useState<string>('all');
-
+  const { isAdminMode } = useAdmin();
+ 
   const { data: projects, isLoading } = useQuery({
-    queryKey: ['projects', filter],
-    queryFn: () => financeService.getProjects(filter === 'all' ? undefined : filter),
+    queryKey: ['projects', filter, isAdminMode],
+    queryFn: () => financeService.getProjects(filter === 'all' ? undefined : filter, { isAdminMode }),
   });
 
   const filters = [
@@ -125,16 +127,20 @@ export default function ProjectsPage() {
                   <div className="space-y-1">
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Contract</span>
-                      <span className="font-medium">{formatINR(project.contract_value)}</span>
+                      <span className="font-medium">
+                        {isAdminMode ? formatINR(project.contract_value) : <span className="text-muted-foreground/30 font-mono tracking-tighter">••••••</span>}
+                      </span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Received</span>
-                      <span className="font-medium text-emerald-600">{formatINR(received)}</span>
+                      <span className="font-medium text-emerald-600">
+                        {isAdminMode ? formatINR(received) : <span className="text-muted-foreground/30 font-mono tracking-tighter">••••••</span>}
+                      </span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Pending</span>
                       <span className="font-medium text-amber-600">
-                        {formatINR(project.contract_value - received)}
+                        {isAdminMode ? formatINR(project.contract_value - received) : <span className="text-muted-foreground/30 font-mono tracking-tighter">••••••</span>}
                       </span>
                     </div>
                   </div>

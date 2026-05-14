@@ -13,13 +13,13 @@ import { financeService } from '@/lib/services/financeService';
 
 export function ProjectGrid() {
   const router = useRouter();
-  const { data: projects, isLoading } = useQuery({
-    queryKey: ['active-projects'],
-    queryFn: () => financeService.getActiveProjects(),
-  });
-
   const { isAdminMode, userRole } = useAdmin();
   const showData = isAdminMode || userRole === 'accountant';
+
+  const { data: projects, isLoading } = useQuery({
+    queryKey: ['active-projects', isAdminMode],
+    queryFn: () => financeService.getActiveProjects({ isAdminMode }),
+  });
 
   if (isLoading) {
     return (

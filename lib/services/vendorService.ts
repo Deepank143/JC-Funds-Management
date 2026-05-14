@@ -8,7 +8,7 @@ import { AuditService } from './auditService';
 export class VendorService {
   private auditService: AuditService;
 
-  constructor(private supabase: SupabaseClient<Database>) {
+  constructor(private supabase: SupabaseClient<Database, 'public'>) {
     this.auditService = new AuditService(supabase);
   }
 

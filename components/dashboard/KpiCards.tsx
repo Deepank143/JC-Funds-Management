@@ -9,14 +9,14 @@ import { useAdmin } from '@/contexts/AdminContext';
 import { financeService } from '@/lib/services/financeService';
 
 export function KpiCards() {
-  const { data, isLoading } = useQuery({
-    queryKey: ['dashboard-kpis'],
-    queryFn: () => financeService.getDashboardKPIs(),
-    refetchInterval: 30000, // Refetch every 30 seconds
-  });
-
   const { isAdminMode, userRole } = useAdmin();
   const showData = isAdminMode || userRole === 'accountant';
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['dashboard-kpis', isAdminMode],
+    queryFn: () => financeService.getDashboardKPIs({ isAdminMode }),
+    refetchInterval: 30000, // Refetch every 30 seconds
+  });
 
   if (isLoading) {
     return (

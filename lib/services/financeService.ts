@@ -13,53 +13,65 @@ async function handleResponse(res: Response, defaultErrorMessage: string) {
   return res.json();
 }
 
+interface FetchOptions {
+  isAdminMode?: boolean;
+}
+
 export const financeService = {
   /**
    * Fetches project insights from the intelligence engine
    */
-  async getProjectInsights(projectId: string): Promise<ProjectInsights> {
-    const project = await this.getProjectDetail(projectId);
-    const pnl = await this.getProjectPnL(projectId);
+  async getProjectInsights(projectId: string, options?: FetchOptions): Promise<ProjectInsights> {
+    const project = await this.getProjectDetail(projectId, options);
+    const pnl = await this.getProjectPnL(projectId, options);
     return intelligenceService.getProjectInsights(project, pnl);
   },
   /**
    * Fetches detailed project information including milestones
    */
-  async getProjectDetail(id: string): Promise<ProjectDetail> {
-    const res = await fetch(`/api/projects/${id}`);
+  async getProjectDetail(id: string, options?: FetchOptions): Promise<ProjectDetail> {
+    const res = await fetch(`/api/projects/${id}`, {
+      headers: options?.isAdminMode ? { 'x-admin-mode': 'true' } : {}
+    });
     return handleResponse(res, 'Failed to fetch project');
   },
 
   /**
    * Fetches project Profit & Loss data
    */
-  async getProjectPnL(id: string): Promise<ProjectPnL> {
-    const res = await fetch(`/api/projects/${id}/pnl`);
+  async getProjectPnL(id: string, options?: FetchOptions): Promise<ProjectPnL> {
+    const res = await fetch(`/api/projects/${id}/pnl`, {
+      headers: options?.isAdminMode ? { 'x-admin-mode': 'true' } : {}
+    });
     return handleResponse(res, 'Failed to fetch P&L');
   },
 
   /**
    * Fetches dashboard-wide KPI summary
    */
-  async getDashboardKPIs(): Promise<DashboardKPIs> {
-    const res = await fetch('/api/dashboard/summary');
+  async getDashboardKPIs(options?: FetchOptions): Promise<DashboardKPIs> {
+    const res = await fetch('/api/dashboard/summary', {
+      headers: options?.isAdminMode ? { 'x-admin-mode': 'true' } : {}
+    });
     return handleResponse(res, 'Failed to fetch dashboard data');
   },
 
   /**
    * Fetches projects with optional status filtering
    */
-  async getProjects(status?: string): Promise<ProjectSummary[]> {
+  async getProjects(status?: string, options?: FetchOptions): Promise<ProjectSummary[]> {
     const url = status ? `/api/projects?status=${status}` : '/api/projects';
-    const res = await fetch(url);
+    const res = await fetch(url, {
+      headers: options?.isAdminMode ? { 'x-admin-mode': 'true' } : {}
+    });
     return handleResponse(res, 'Failed to fetch projects');
   },
 
   /**
    * Fetches all active projects for the dashboard grid
    */
-  async getActiveProjects(): Promise<ProjectSummary[]> {
-    return this.getProjects('active');
+  async getActiveProjects(options?: FetchOptions): Promise<ProjectSummary[]> {
+    return this.getProjects('active', options);
   },
 
   /**
@@ -73,16 +85,20 @@ export const financeService = {
   /**
    * Fetches all income records
    */
-  async getIncomeHistory(): Promise<IncomeRecord[]> {
-    const res = await fetch('/api/income');
+  async getIncomeHistory(options?: FetchOptions): Promise<IncomeRecord[]> {
+    const res = await fetch('/api/income', {
+      headers: options?.isAdminMode ? { 'x-admin-mode': 'true' } : {}
+    });
     return handleResponse(res, 'Failed to fetch income records');
   },
 
   /**
    * Fetches all expense records
    */
-  async getExpenses(): Promise<ExpenseRecord[]> {
-    const res = await fetch('/api/expenses');
+  async getExpenses(options?: FetchOptions): Promise<ExpenseRecord[]> {
+    const res = await fetch('/api/expenses', {
+      headers: options?.isAdminMode ? { 'x-admin-mode': 'true' } : {}
+    });
     return handleResponse(res, 'Failed to fetch expenses');
   },
 

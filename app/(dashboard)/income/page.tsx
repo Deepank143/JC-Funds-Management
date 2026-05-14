@@ -20,7 +20,7 @@ import { financeService } from '@/lib/services/financeService';
 import { IncomeRecord } from '@/lib/types';
 
 export default function IncomePage() {
-  const { canWrite } = useAdmin();
+  const { canWrite, isAdminMode } = useAdmin();
 
   const getIncomeStatus = (record: IncomeRecord) => {
     if (!record.milestones) return { label: 'Received', color: 'bg-emerald-500 text-white hover:bg-emerald-600 border-transparent' };
@@ -35,8 +35,8 @@ export default function IncomePage() {
   };
 
   const { data: income, isLoading } = useQuery({
-    queryKey: ['income'],
-    queryFn: () => financeService.getIncomeHistory(),
+    queryKey: ['income', isAdminMode],
+    queryFn: () => financeService.getIncomeHistory({ isAdminMode }),
   });
 
   return (
@@ -67,7 +67,7 @@ export default function IncomePage() {
                       {format(new Date(record.payment_date), 'dd MMM yyyy')}
                     </p>
                     <div className="font-bold text-lg text-emerald-700">
-                      ₹{record.amount?.toLocaleString()}
+                      {isAdminMode ? `₹${record.amount?.toLocaleString()}` : <span className="text-muted-foreground/30 font-mono tracking-tighter text-sm">••••••</span>}
                     </div>
                   </div>
                   <Badge variant="outline" className={getIncomeStatus(record).color}>
@@ -158,7 +158,7 @@ export default function IncomePage() {
                     )}
                   </TableCell>
                   <TableCell className="text-right font-medium text-green-600">
-                    ₹{record.amount?.toLocaleString()}
+                    {isAdminMode ? `₹${record.amount?.toLocaleString()}` : <span className="text-muted-foreground/30 font-mono tracking-tighter">••••••</span>}
                   </TableCell>
                   <TableCell>
                     <Badge variant="outline" className={getIncomeStatus(record).color}>

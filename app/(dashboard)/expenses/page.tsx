@@ -30,6 +30,7 @@ function SettleExpenseDialog({ expense }: { expense: ExpenseRecord }) {
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState('bank_transfer');
   const [ref, setRef] = useState('');
+  const { isAdminMode } = useAdmin();
   const queryClient = useQueryClient();
 
   const mutation = useMutation({
@@ -58,7 +59,7 @@ function SettleExpenseDialog({ expense }: { expense: ExpenseRecord }) {
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Settle Expense: ₹{expense.amount?.toLocaleString()}</DialogTitle>
+          <DialogTitle>Settle Expense: {isAdminMode ? `₹${expense.amount?.toLocaleString()}` : '••••••'}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4 py-4">
           <div className="space-y-2">
@@ -94,7 +95,7 @@ function SettleExpenseDialog({ expense }: { expense: ExpenseRecord }) {
 }
 
 export default function ExpensesPage() {
-  const { canWrite, canManageFunds } = useAdmin();
+  const { canWrite, canManageFunds, isAdminMode } = useAdmin();
 
   const getExpenseStatus = (expense: ExpenseRecord) => {
     if (expense.payment_status === 'paid') return { label: 'Paid', color: 'bg-green-500 text-white hover:bg-green-600 border-transparent' };
@@ -103,8 +104,8 @@ export default function ExpensesPage() {
   };
 
   const { data: expenses, isLoading } = useQuery({
-    queryKey: ['expenses'],
-    queryFn: () => financeService.getExpenses(),
+    queryKey: ['expenses', isAdminMode],
+    queryFn: () => financeService.getExpenses({ isAdminMode }),
   });
 
   return (
@@ -183,7 +184,7 @@ export default function ExpensesPage() {
                     )}
                   </div>
                   <div className="text-lg font-bold">
-                    ₹{expense.amount?.toLocaleString()}
+                    {isAdminMode ? `₹${expense.amount?.toLocaleString()}` : <span className="text-muted-foreground/30 font-mono tracking-tighter text-sm">••••••</span>}
                   </div>
                 </div>
 
@@ -275,7 +276,7 @@ export default function ExpensesPage() {
                     )}
                   </TableCell>
                   <TableCell className="text-right font-medium">
-                    ₹{expense.amount?.toLocaleString()}
+                    {isAdminMode ? `₹${expense.amount?.toLocaleString()}` : <span className="text-muted-foreground/30 font-mono tracking-tighter">••••••</span>}
                   </TableCell>
                   <TableCell>
                     <Badge variant="outline" className={getExpenseStatus(expense).color}>

@@ -7,7 +7,7 @@ import { NextResponse } from 'next/server';
  * Server-side service for Authentication and RBAC
  */
 export class AuthService {
-  constructor(private supabase: SupabaseClient<Database>) {}
+  constructor(private supabase: SupabaseClient<Database, 'public'>) {}
 
   /**
    * Gets the current session and user profile

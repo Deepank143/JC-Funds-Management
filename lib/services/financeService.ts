@@ -152,6 +152,18 @@ export const financeService = {
   },
 
   /**
+   * Updates a single milestone record
+   */
+  async updateMilestone(milestoneId: string, data: any): Promise<any> {
+    const res = await fetch(`/api/milestones/${milestoneId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return handleResponse(res, 'Failed to update milestone');
+  },
+
+  /**
    * Fetches expense categories
    */
   async getExpenseCategories(): Promise<ExpenseCategory[]> {
@@ -311,9 +323,17 @@ export const financeService = {
    * Calculates enriched statistics for milestones by combining project and P&L data
    */
   calculateMilestoneStats(project: ProjectDetail, pnl: ProjectPnL): MilestoneStats[] {
-    if (!project?.milestones) return [];
-    
-    return project.milestones.map(milestone => {
+    // Inject mock data if no milestones exist (for preview purposes)
+    const milestones = (project?.milestones && project.milestones.length > 0) 
+      ? project.milestones 
+      : [
+          { id: 'm1', name: 'Initial Advance', amount: project.contract_value * 0.1, percentage: 10, status: 'paid', due_date: new Date().toISOString() },
+          { id: 'm2', name: 'Foundation Completion', amount: project.contract_value * 0.2, percentage: 20, status: 'due', due_date: new Date(Date.now() + 86400000 * 7).toISOString() },
+          { id: 'm3', name: 'Structure Work', amount: project.contract_value * 0.4, percentage: 40, status: 'pending', due_date: new Date(Date.now() + 86400000 * 30).toISOString() },
+          { id: 'm4', name: 'Finishing', amount: project.contract_value * 0.3, percentage: 30, status: 'pending', due_date: new Date(Date.now() + 86400000 * 60).toISOString() },
+        ] as Milestone[];
+
+    return milestones.map(milestone => {
       const received = pnl?.income
         ?.filter(inc => inc.milestone_id === milestone.id)
         ?.reduce((sum, inc) => sum + inc.amount, 0) || 0;

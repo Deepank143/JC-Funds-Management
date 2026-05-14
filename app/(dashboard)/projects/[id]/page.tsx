@@ -21,8 +21,9 @@ import { AdminCorrectionModal } from '@/components/admin/AdminCorrectionModal';
 import { SettlementWizard } from '@/components/projects/SettlementWizard';
 import { financeService } from '@/lib/services/financeService';
 import { IncomeForm } from '@/components/forms/IncomeForm';
+import { MilestoneDrawer } from '@/components/projects/MilestoneDrawer';
 import { ProjectDetail, ProjectPnL, MilestoneStats, ProjectInsights } from '@/lib/types';
-import { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 
 export default function ProjectDetailPage() {
   const router = useRouter();
@@ -30,6 +31,7 @@ export default function ProjectDetailPage() {
   const projectId = params.id as string;
   const [correctionEntry, setCorrectionEntry] = useState<{ type: 'income' | 'expense'; data: any } | null>(null);
   const [isSettlementOpen, setIsSettlementOpen] = useState(false);
+  const [selectedMilestone, setSelectedMilestone] = useState<MilestoneStats | null>(null);
 
   const { isOwner, isAdminMode } = useAdmin();
   const showSensitiveData = isOwner ? isAdminMode : false;
@@ -48,6 +50,13 @@ export default function ProjectDetailPage() {
     queryKey: ['project-insights', projectId, isAdminMode],
     queryFn: () => financeService.getProjectInsights(projectId, { isAdminMode }),
   });
+
+  // Memoize milestone stats to prevent unnecessary re-calculations and stable object identities
+  const milestoneStats = useMemo(() => {
+    return (project && pnl) 
+      ? financeService.calculateMilestoneStats(project, pnl)
+      : [];
+  }, [project, pnl]);
 
   const isLoading = projectLoading || pnlLoading;
 
@@ -87,11 +96,6 @@ export default function ProjectDetailPage() {
   }));
 
   const marginColor = getProfitColor(summary.profit_margin);
-  
-  // Use service to calculate milestone stats
-  const milestoneStats = (project && pnl) 
-    ? financeService.calculateMilestoneStats(project, pnl)
-    : [];
 
   return (
     <div className="space-y-6">
@@ -363,24 +367,28 @@ export default function ProjectDetailPage() {
                     {milestoneStats.map((milestone) => (
                       <div 
                         key={milestone.id}
-                        className="flex flex-col p-4 rounded-xl border bg-card hover:shadow-sm transition-all gap-4"
+                        onClick={() => {
+                          console.log('Milestone card clicked:', milestone.id);
+                          setSelectedMilestone(milestone);
+                        }}
+                        className="flex flex-col p-4 rounded-xl border bg-card hover:bg-muted/50 hover:shadow-md transition-all gap-4 cursor-pointer group relative z-10"
                       >
                         <div className="flex items-start justify-between gap-4">
-                          <div className="flex items-start gap-3">
-                            <div className={`mt-1 p-1.5 rounded-full ${
-                              milestone.progress >= 100 ? 'bg-emerald-100' : 
-                              milestone.progress > 0 ? 'bg-amber-100' : 'bg-slate-100'
+                          <div className="flex items-start gap-3 flex-1">
+                            <div className={`mt-1 p-1.5 rounded-full transition-colors ${
+                              milestone.progress >= 100 ? 'bg-emerald-100 group-hover:bg-emerald-200' : 
+                              milestone.progress > 0 ? 'bg-amber-100 group-hover:bg-amber-200' : 'bg-slate-100 group-hover:bg-slate-200'
                             }`}>
                               {milestone.progress >= 100 ? (
-                                <CheckCircle2 className={`h-4 w-4 ${milestone.progress >= 100 ? 'text-emerald-600' : 'text-slate-400'}`} />
+                                <CheckCircle2 className={`h-4 w-4 text-emerald-600`} />
                               ) : (
                                 <Clock className={`h-4 w-4 ${milestone.progress > 0 ? 'text-amber-600' : 'text-slate-400'}`} />
                               )}
                             </div>
                             <div>
-                              <p className="font-semibold text-sm leading-tight">{milestone.name}</p>
+                              <p className="font-semibold text-sm leading-tight group-hover:text-primary transition-colors">{milestone.name}</p>
                               <div className="flex items-center gap-2 mt-1">
-                                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-muted">
+                                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-muted group-hover:bg-background transition-colors">
                                   {milestone.percentage}%
                                 </span>
                                 <span className="text-[10px] text-muted-foreground">
@@ -398,19 +406,6 @@ export default function ProjectDetailPage() {
                               {milestone.progress >= 100 ? 'Fully Paid' : 
                                milestone.progress > 0 ? 'Partially Paid' : 'Pending'}
                             </Badge>
-                            {milestone.progress < 100 && (
-                              <div className="mt-2">
-                                <IncomeForm 
-                                  defaultProjectId={projectId} 
-                                  defaultMilestoneId={milestone.id}
-                                  triggerElement={
-                                    <Button variant="outline" size="sm" className="h-6 px-2 text-[10px] w-full">
-                                      Pay Now
-                                    </Button>
-                                  }
-                                />
-                              </div>
-                            )}
                           </div>
                         </div>
 
@@ -438,12 +433,34 @@ export default function ProjectDetailPage() {
                               <p className="text-[11px] font-bold text-red-600">{formatINR(milestone.expended)}</p>
                             </div>
                             <div>
-                              <p className="text-[9px] uppercase text-muted-foreground font-medium">Net Stage</p>
-                              <p className={`text-[11px] font-bold ${milestone.netPosition >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>
+                              <p className="text-[9px] uppercase text-muted-foreground font-medium text-right">Net Position</p>
+                              <p className={`text-[11px] font-bold text-right ${milestone.netPosition >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>
                                 {formatINR(milestone.netPosition)}
                               </p>
                             </div>
                           </div>
+                        </div>
+
+                        <div className="flex items-center justify-end gap-2 mt-2" onClick={(e) => e.stopPropagation()}>
+                          {milestone.progress < 100 && (
+                            <IncomeForm 
+                              defaultProjectId={projectId} 
+                              defaultMilestoneId={milestone.id}
+                              triggerElement={
+                                <Button variant="outline" size="sm" className="h-7 px-3 text-[10px] hover:bg-primary hover:text-primary-foreground font-bold">
+                                  Pay Now
+                                </Button>
+                              }
+                            />
+                          )}
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-7 px-3 text-[10px] font-bold group-hover:bg-muted"
+                            onClick={() => setSelectedMilestone(milestone)}
+                          >
+                            Manage
+                          </Button>
                         </div>
                       </div>
                     ))}
@@ -543,6 +560,15 @@ export default function ProjectDetailPage() {
           projectName={project.name}
         />
       )}
+
+      {/* Milestone Detail Drawer */}
+      <MilestoneDrawer
+        isOpen={!!selectedMilestone}
+        onClose={() => setSelectedMilestone(null)}
+        milestone={selectedMilestone}
+        projectId={projectId}
+        contractValue={project.contract_value}
+      />
     </div>
   );
 }

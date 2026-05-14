@@ -46,12 +46,12 @@ export async function GET(request: Request) {
 // POST /api/expenses - Create new expense
 export async function POST(request: Request) {
   try {
-    const { error: authError, supabase, session } = await checkRole(['owner', 'accountant']);
+    const { error: authError, supabase, user } = await checkRole(['owner', 'accountant']);
     if (authError) return authError;
 
     const body = await request.json();
 
-    const { data, error } = await (supabase.from('expenses') )
+    const { data, error } = await (supabase.from('expenses') as any)
       .insert({
         project_id: body.project_id,
         category_id: body.category_id,
@@ -66,7 +66,7 @@ export async function POST(request: Request) {
         milestone_id: body.milestone_id,
         notes: body.notes,
         bill_photo_url: body.bill_photo_url,
-        created_by: session.user.id,
+        created_by: user.id,
       })
       .select()
       .single();

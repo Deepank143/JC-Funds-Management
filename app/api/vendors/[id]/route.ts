@@ -1,7 +1,8 @@
 export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { getServerClient } from '@/lib/supabase';
-import { checkRole } from '@/lib/auth-utils';
+import { AuthService } from '@/lib/services/authService';
+import { VendorService } from '@/lib/services/vendorService';
 
 // GET /api/vendors/[id] - Get vendor details
 export async function GET(
@@ -9,20 +10,16 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const { error: authError, supabase, session } = await checkRole(['owner', 'accountant']);
+    const { id } = params;
+    const supabase = getServerClient();
+    const auth = new AuthService(supabase);
+    const vendorService = new VendorService(supabase);
+
+    const { error: authError } = await auth.checkRole(['owner', 'accountant', 'viewer']);
     if (authError) return authError;
 
-    const { id } = params;
+    const vendor = await vendorService.getVendorDetail(id);
 
-    const { data: rawVendor, error } = await supabase
-      .from('vendors')
-      .select('*')
-      .eq('id', id)
-      .single();
-
-    const vendor = rawVendor;
-
-    if (error) throw error;
     if (!vendor) {
       return NextResponse.json(
         { error: 'Vendor not found' },
@@ -46,30 +43,18 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
-    const { error: authError, supabase, session } = await checkRole(['owner', 'accountant']);
+    const { id } = params;
+    const supabase = getServerClient();
+    const auth = new AuthService(supabase);
+    const vendorService = new VendorService(supabase);
+
+    const { error: authError, user } = await auth.checkRole(['owner', 'accountant']);
     if (authError) return authError;
 
-    const { id } = params;
     const body = await request.json();
+    const vendor = await vendorService.updateVendor(id, body, user!.id);
 
-    const { data, error } = await (supabase.from('vendors') )
-      .update({
-        name: body.name,
-        type: body.type,
-        contact_person: body.contact_person,
-        phone: body.phone,
-        email: body.email,
-        gstin: body.gstin,
-        notes: body.notes,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', id)
-      .select()
-      .single();
-
-    if (error) throw error;
-
-    return NextResponse.json(data);
+    return NextResponse.json(vendor);
   } catch (error) {
     console.error('Vendor update error:', error);
     return NextResponse.json(

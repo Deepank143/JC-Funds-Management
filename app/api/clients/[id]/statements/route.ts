@@ -9,7 +9,7 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const { error: authError, supabase, session } = await checkRole(['owner', 'accountant', 'viewer']);
+    const { error: authError, supabase, user } = await checkRole(['owner', 'accountant', 'viewer']);
     if (authError) return authError;
     const { id } = params;
 

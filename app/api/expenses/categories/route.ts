@@ -5,7 +5,7 @@ import { checkRole } from '@/lib/auth-utils';
 
 export async function GET() {
   try {
-    const { error: authError, supabase, session } = await checkRole(['owner', 'accountant', 'viewer']);
+    const { error: authError, supabase, user } = await checkRole(['owner', 'accountant', 'viewer']);
     if (authError) return authError;
 
     const { data, error } = await supabase

@@ -58,8 +58,8 @@ export default function VendorsPage() {
 
                 <div className="grid grid-cols-2 gap-2 text-sm text-muted-foreground">
                   <div className="flex items-center gap-1.5">
-                    <User className="h-3.5 w-3.5" />
-                    <span className="truncate">{vendor.contact_person || 'N/A'}</span>
+                    <Tag className="h-3.5 w-3.5" />
+                    <span className="truncate">{vendor.email || 'N/A'}</span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <Phone className="h-3.5 w-3.5" />
@@ -87,7 +87,7 @@ export default function VendorsPage() {
             <TableRow>
               <TableHead>Vendor Name</TableHead>
               <TableHead>Type</TableHead>
-              <TableHead>Contact Person</TableHead>
+              <TableHead>Email</TableHead>
               <TableHead>Phone</TableHead>
               <TableHead className="text-right">Action</TableHead>
             </TableRow>
@@ -116,7 +116,7 @@ export default function VendorsPage() {
                       {vendor.type}
                     </Badge>
                   </TableCell>
-                  <TableCell>{vendor.contact_person || '-'}</TableCell>
+                  <TableCell>{vendor.email || '-'}</TableCell>
                   <TableCell>{vendor.phone || '-'}</TableCell>
                   <TableCell className="text-right">
                     <Link 

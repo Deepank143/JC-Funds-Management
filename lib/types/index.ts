@@ -20,6 +20,7 @@ export interface Milestone {
   amount: number;
   status: 'pending' | 'billed' | 'paid' | string;
   due_date?: string;
+  sort_order?: number;
 }
 
 export interface ProjectPnL {
@@ -132,7 +133,6 @@ export interface Vendor {
   id: string;
   name: string;
   type: 'material' | 'labour' | 'vendor' | 'other';
-  contact_person?: string;
   phone?: string;
   email?: string;
   address?: string;

@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createClient } from '@/lib/supabase/client';
 
 type UserRole = 'owner' | 'accountant' | 'viewer';
 
@@ -29,7 +29,7 @@ interface AdminContextType {
 const AdminContext = createContext<AdminContextType | undefined>(undefined);
 
 export function AdminProvider({ children }: { children: ReactNode }) {
-  const supabase = createClientComponentClient();
+  const supabase = createClient();
   const [userRole, setUserRole] = useState<UserRole>('viewer');
   const [isAdminMode, setIsAdminMode] = useState(false);
   const [isLoading, setIsLoading] = useState(true);

@@ -5,7 +5,7 @@ import { checkRole } from '@/lib/auth-utils';
 
 export async function PUT(request: Request, { params }: { params: { id: string } }) {
   try {
-    const { error: authError, supabase, session } = await checkRole(['owner', 'accountant']);
+    const { error: authError, supabase, user } = await checkRole(['owner', 'accountant']);
     if (authError) return authError;
 
     const body = await request.json();
@@ -15,7 +15,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
         return NextResponse.json({ error: 'Expense ID is required' }, { status: 400 });
     }
 
-    const { data, error } = await (supabase.from('expenses') )
+    const { data, error } = await (supabase.from('expenses') as any)
       .update({
         payment_status: 'paid',
         amount_paid: body.amount,

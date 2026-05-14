@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createClient } from '@/lib/supabase/client';
 import { useAdmin } from '@/contexts/AdminContext';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -23,7 +23,7 @@ interface HeaderProps {
 
 export function Header({ onMenuClick }: HeaderProps) {
   const router = useRouter();
-  const supabase = createClientComponentClient();
+  const supabase = createClient();
   const { isOwner, isAdminMode, toggleAdminMode, userRole, userName } = useAdmin();
 
   const handleSignOut = async () => {

@@ -1,23 +1,19 @@
-export const dynamic = 'force-dynamic';
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
+import { createClient } from '@/lib/supabase/server';
 
 export async function GET(request: Request) {
-  const requestUrl = new URL(request.url);
-  const code = requestUrl.searchParams.get('code');
-  let next = requestUrl.searchParams.get('next') || '/';
+  const { searchParams, origin } = new URL(request.url);
+  const code = searchParams.get('code');
+  const next = searchParams.get('next') ?? '/';
 
   if (code) {
-    const cookieStore = cookies();
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
-    await supabase.auth.exchangeCodeForSession(code);
+    const supabase = createClient();
+    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    if (!error) {
+      return NextResponse.redirect(`${origin}${next}`);
+    }
   }
 
-  // Security: Ensure the redirect URL is a relative path to prevent open redirects
-  if (!next.startsWith('/')) {
-    next = '/';
-  }
-
-  return NextResponse.redirect(`${requestUrl.origin}${next}`);
+  // return the user to an error page with some instructions
+  return NextResponse.redirect(`${origin}/login?error=auth-code-error`);
 }

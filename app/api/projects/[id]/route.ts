@@ -1,7 +1,8 @@
 export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { getServerClient } from '@/lib/supabase';
-import { checkRole } from '@/lib/auth-utils';
+import { AuthService } from '@/lib/services/authService';
+import { ProjectService } from '@/lib/services/projectService';
 
 // GET /api/projects/[id] - Full project detail
 export async function GET(
@@ -9,35 +10,22 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const { error: authError, supabase, session } = await checkRole(['owner', 'accountant', 'viewer']);
-    if (authError) return authError;
     const { id } = params;
+    const supabase = getServerClient();
+    const auth = new AuthService(supabase);
+    const projectService = new ProjectService(supabase);
 
-    const { data: rawProject, error } = await supabase
-      .from('projects')
-      .select(`
-        *,
-        clients(id, name, phone, email),
-        milestones(id, name, percentage, amount, due_date, status, sort_order),
-        income(id, amount, payment_date, payment_mode, reference_number, milestone_id)
-      `)
-      .eq('id', id)
-      .single();
+    const { error: authError } = await auth.checkRole(['owner', 'accountant', 'viewer']);
+    if (authError) return authError;
 
-    const project = rawProject ;
+    const project = await projectService.getProjectDetail(id);
 
-    if (error) throw error;
     if (!project) {
       return NextResponse.json(
         { error: 'Project not found' },
         { status: 404 }
       );
     }
-
-    // Sort milestones by sort_order
-    project.milestones = (project.milestones || []).sort(
-      (a: any, b: any) => (a.sort_order || 0) - (b.sort_order || 0)
-    );
 
     return NextResponse.json(project);
   } catch (error) {

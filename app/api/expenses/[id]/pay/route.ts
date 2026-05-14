@@ -17,7 +17,7 @@ export async function PATCH(request: Request, { params }: { params: { id: string
         return NextResponse.json({ error: 'Expense ID is required' }, { status: 400 });
     }
 
-    const { data, error } = await (supabase.from('expenses') )
+    const { data, error } = await (supabase.from('expenses') as any)
       .update({
         payment_status: 'paid',
         amount_paid: body.amount,

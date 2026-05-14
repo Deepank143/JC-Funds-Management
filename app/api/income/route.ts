@@ -43,13 +43,13 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     // ONLY Owners can record income (Money In is a sensitive operation)
-    const { error, supabase, session } = await checkOwner();
+    const { error, supabase, user } = await checkOwner();
     if (error) return error;
 
     const body = await request.json();
 
     // Use atomic RPC to handle income insert and milestone status update in one transaction
-    const { data, error: rpcError } = await (supabase ).rpc('record_income_with_milestone_update', {
+    const { data, error: rpcError } = await (supabase as any).rpc('record_income_with_milestone_update', {
       p_project_id: body.project_id,
       p_client_id: body.client_id,
       p_milestone_id: body.milestone_id,
@@ -58,7 +58,7 @@ export async function POST(request: Request) {
       p_payment_mode: body.payment_mode || 'bank_transfer',
       p_reference_number: body.reference_number,
       p_notes: body.notes,
-      p_created_by: session.user.id,
+      p_created_by: user.id,
     });
 
     if (rpcError) {

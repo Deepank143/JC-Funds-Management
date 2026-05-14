@@ -6,7 +6,7 @@ import { checkRole } from '@/lib/auth-utils';
 // GET /api/clients - List all clients with project counts
 export async function GET(request: Request) {
   try {
-    const { error: authError, supabase, session } = await checkRole(['owner', 'accountant', 'viewer']);
+    const { error: authError, supabase, user } = await checkRole(['owner', 'accountant', 'viewer']);
     if (authError) return authError;
 
     const { searchParams } = new URL(request.url);
@@ -49,12 +49,12 @@ export async function GET(request: Request) {
 // POST /api/clients - Create new client
 export async function POST(request: Request) {
   try {
-    const { error: authError, supabase, session } = await checkRole(['owner', 'accountant']);
+    const { error: authError, supabase, user } = await checkRole(['owner', 'accountant']);
     if (authError) return authError;
 
     const body = await request.json();
 
-    const { data, error } = await (supabase.from('clients') )
+    const { data, error } = await (supabase.from('clients') as any)
       .insert({
         name: body.name,
         contact_person: body.contact_person,
@@ -63,7 +63,7 @@ export async function POST(request: Request) {
         address: body.address,
         gstin: body.gstin,
         notes: body.notes,
-        created_by: session.user.id,
+        created_by: user.id,
       })
       .select()
       .single();

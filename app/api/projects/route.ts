@@ -1,51 +1,31 @@
 export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { getServerClient } from '@/lib/supabase';
-import { checkRole } from '@/lib/auth-utils';
+import { AuthService } from '@/lib/services/authService';
+import { ProjectService } from '@/lib/services/projectService';
 
 // GET /api/projects - List all projects
 export async function GET(request: Request) {
   try {
-    const { error: authError, supabase, session } = await checkRole(['owner', 'accountant', 'viewer']);
+    const supabase = getServerClient();
+    const auth = new AuthService(supabase);
+    
+    // Check for Admin Mode header (Owner Only toggle)
+    const adminModeHeader = request.headers.get('x-admin-mode');
+    const isAdminModeRequested = adminModeHeader === 'true';
+
+    const projectService = new ProjectService(supabase, { adminMode: isAdminModeRequested });
+
+    const { error: authError } = await auth.checkRole(['owner', 'accountant', 'viewer']);
     if (authError) return authError;
     
     const { searchParams } = new URL(request.url);
-    const status = searchParams.get('status');
-    const clientId = searchParams.get('client_id');
+    const status = searchParams.get('status') || undefined;
+    const clientId = searchParams.get('client_id') || undefined;
 
-    // Use RPC if we want margins (for dashboard/grid)
-    const { data: projectsWithMargins, error: rpcError } = await supabase.rpc('get_projects_with_margins');
-    
-    if (rpcError) {
-      console.warn('RPC margin fetch failed, falling back to basic query:', rpcError);
-      // Fallback to basic query if RPC fails (e.g. migration not applied yet)
-      let query = supabase
-        .from('projects')
-        .select(`
-          *,
-          clients(name),
-          milestones(id, name, status, amount)
-        `)
-        .order('created_at', { ascending: false });
+    const projects = await projectService.listProjects({ status, clientId });
 
-      if (status) query = query.eq('status', status);
-      if (clientId) query = query.eq('client_id', clientId);
-
-      const { data, error } = await query;
-      if (error) throw error;
-      return NextResponse.json(data);
-    }
-
-    // Filter RPC results if needed
-    let filtered = projectsWithMargins ;
-    if (status && status !== 'all') {
-      filtered = filtered.filter((p: any) => p.status === status);
-    }
-    if (clientId) {
-      filtered = filtered.filter((p: any) => p.client_id === clientId);
-    }
-
-    return NextResponse.json(filtered);
+    return NextResponse.json(projects);
   } catch (error) {
     console.error('Projects fetch error:', error);
     return NextResponse.json(
@@ -58,44 +38,15 @@ export async function GET(request: Request) {
 // POST /api/projects - Create new project
 export async function POST(request: Request) {
   try {
-    const { error: authError, supabase, session } = await checkRole(['owner', 'accountant']);
+    const supabase = getServerClient();
+    const auth = new AuthService(supabase);
+    const projectService = new ProjectService(supabase);
+
+    const { error: authError, user } = await auth.checkRole(['owner', 'accountant']);
     if (authError) return authError;
 
     const body = await request.json();
-
-    const { data: project, error: projectError } = await (supabase.from('projects') )
-      .insert({
-        client_id: body.client_id,
-        name: body.name,
-        location: body.location,
-        description: body.description,
-        contract_value: body.contract_value,
-        start_date: body.start_date,
-        expected_end_date: body.expected_end_date,
-        status: 'active',
-        created_by: session.user.id,
-      })
-      .select()
-      .single();
-
-    if (projectError) throw projectError;
-
-    // Create default milestones if provided
-    if (body.milestones && body.milestones.length > 0) {
-      const milestones = body.milestones.map((m: any, index: number) => ({
-        project_id: project.id,
-        name: m.name,
-        percentage: m.percentage,
-        amount: Math.round(((body.contract_value * m.percentage) / 100) * 100) / 100,
-        due_date: m.due_date,
-        sort_order: index,
-      }));
-
-      const { error: milestoneError } = await (supabase.from('milestones') )
-        .insert(milestones);
-
-      if (milestoneError) throw milestoneError;
-    }
+    const project = await projectService.createProject(body, user!.id);
 
     return NextResponse.json(project, { status: 201 });
   } catch (error) {

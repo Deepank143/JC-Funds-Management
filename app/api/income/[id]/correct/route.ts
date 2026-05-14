@@ -1,13 +1,19 @@
 import { NextResponse } from 'next/server';
-import { checkOwner } from '@/lib/auth-utils';
+import { getServerClient } from '@/lib/supabase';
+import { AuthService } from '@/lib/services/authService';
+import { AuditService } from '@/lib/services/auditService';
 
 export async function PATCH(
   request: Request,
   { params }: { params: { id: string } }
 ) {
   try {
-    const { error, supabase, session } = await checkOwner();
-    if (error) return error;
+    const supabase = getServerClient();
+    const authService = new AuthService(supabase);
+    const auditService = new AuditService(supabase);
+
+    const { error: authError, user } = await authService.checkOwner();
+    if (authError) return authError;
 
     const body = await request.json();
     const incomeId = params.id;
@@ -38,7 +44,7 @@ export async function PATCH(
     }
 
     // 2. Perform update
-    const { data: updatedData, error: updateError } = await (supabase.from('income') )
+    const { data: updatedData, error: updateError } = await (supabase.from('income') as any)
       .update({
         amount: body.amount,
         payment_date: body.payment_date,
@@ -53,16 +59,15 @@ export async function PATCH(
 
     if (updateError) throw updateError;
 
-    // 3. Log to audit_logs
-    await (supabase.from('audit_logs') ).insert({
-      table_name: 'income',
-      record_id: incomeId,
-      action: 'UPDATE',
-      old_data: originalData,
-      new_data: updatedData,
-      reason: body.correction_reason,
-      performed_by: session.user.id,
-    });
+    // 3. Log to audit_logs using AuditService
+    await auditService.logCorrection(
+      'income',
+      incomeId,
+      originalData,
+      updatedData,
+      body.correction_reason,
+      user.id
+    );
 
     return NextResponse.json(updatedData);
   } catch (error: any) {

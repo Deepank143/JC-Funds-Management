@@ -8,7 +8,7 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    const { error: authError, supabase, session } = await checkRole(['owner', 'accountant']);
+    const { error: authError, supabase, user } = await checkRole(['owner', 'accountant']);
     if (authError) return authError;
 
     const projectId = params.id;
@@ -31,7 +31,7 @@ export async function PUT(
       .eq('project_id', projectId)
       .not('milestone_id', 'is', null);
 
-    const linkedMilestoneIds = new Set((linkedPayments )?.map((p: any) => p.milestone_id) || []);
+    const linkedMilestoneIds = new Set((linkedPayments as any)?.map((p: any) => p.milestone_id) || []);
 
     // 2. Prepare new milestone data
     const milestonesToInsert = milestones.map((m: any, index: number) => ({
@@ -62,7 +62,7 @@ export async function PUT(
     // Identify milestones to delete: those NOT in the new list AND NOT linked to payments
     const incomingIds = new Set(milestonesToUpsert.map(m => m.id).filter(id => id));
     
-    const { error: deleteError } = await (supabase.from('milestones') )
+    const { error: deleteError } = await (supabase.from('milestones') as any)
       .delete()
       .eq('project_id', projectId)
       .not('id', 'in', Array.from(incomingIds).length > 0 ? `(${Array.from(incomingIds).join(',')})` : '(NULL)')
@@ -74,7 +74,7 @@ export async function PUT(
     }
 
     // Upsert the new list
-    const { error: upsertError } = await (supabase.from('milestones') )
+    const { error: upsertError } = await (supabase.from('milestones') as any)
       .upsert(milestonesToUpsert );
 
     if (upsertError) {

@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -48,7 +48,7 @@ export function ExpenseForm() {
   const [file, setFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const queryClient = useQueryClient();
-  const supabase = createClientComponentClient();
+  const supabase = createClient();
 
   const { isAdminMode, canManageFunds } = useAdmin();
 

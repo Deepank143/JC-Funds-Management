@@ -6,7 +6,7 @@ import { checkRole } from '@/lib/auth-utils';
 // GET /api/milestones?project_id=xxx - List milestones for project
 export async function GET(request: Request) {
   try {
-    const { error: authError, supabase, session } = await checkRole(['owner', 'accountant', 'viewer']);
+    const { error: authError, supabase, user } = await checkRole(['owner', 'accountant', 'viewer']);
     if (authError) return authError;
     const { searchParams } = new URL(request.url);
     const projectId = searchParams.get('project_id');
@@ -39,7 +39,7 @@ export async function GET(request: Request) {
 // POST /api/milestones - Create milestone
 export async function POST(request: Request) {
   try {
-    const { error: authError, supabase, session } = await checkRole(['owner', 'accountant']);
+    const { error: authError, supabase, user } = await checkRole(['owner', 'accountant']);
     if (authError) return authError;
     const body = await request.json();
 
@@ -49,7 +49,7 @@ export async function POST(request: Request) {
       amount = (body.percentage * body.contract_value) / 100;
     }
 
-    const { data, error } = await (supabase.from('milestones') )
+    const { data, error } = await (supabase.from('milestones') as any)
       .insert({
         project_id: body.project_id,
         name: body.name,

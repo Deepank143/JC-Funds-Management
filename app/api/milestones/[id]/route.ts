@@ -9,7 +9,7 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
-    const { error: authError, supabase, session } = await checkRole(['owner', 'accountant']);
+    const { error: authError, supabase, user } = await checkRole(['owner', 'accountant']);
     if (authError) return authError;
 
     const { id } = params;
@@ -22,7 +22,7 @@ export async function PATCH(
     if (body.amount !== undefined) updateData.amount = body.amount;
     if (body.due_date !== undefined) updateData.due_date = body.due_date;
 
-    const { data, error } = await (supabase.from('milestones') )
+    const { data, error } = await (supabase.from('milestones') as any)
       .update(updateData)
       .eq('id', id)
       .select()

@@ -1,27 +1,25 @@
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
-import { Database } from '@/types/supabase';
+import { createClient } from './supabase/server';
 
 export type UserRole = 'owner' | 'accountant' | 'viewer';
 
 /**
  * Checks if the current user has one of the required roles.
  * Returns the profile if authorized, otherwise returns a NextResponse error.
+ * @deprecated Use AuthService for new logic.
  */
 export async function checkRole(allowedRoles: UserRole[]) {
-  const cookieStore = cookies();
-  const supabase = createRouteHandlerClient<Database>({ cookies: () => cookieStore });
+  const supabase = createClient();
 
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
     return { error: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) };
   }
 
   const { data: profile } = await supabase
     .from('profiles')
     .select('role')
-    .eq('id', session.user.id)
+    .eq('id', user.id)
     .single();
 
   if (!profile || !allowedRoles.includes((profile as any).role as UserRole)) {
@@ -33,11 +31,12 @@ export async function checkRole(allowedRoles: UserRole[]) {
     };
   }
 
-  return { profile, session, supabase };
+  return { profile, user, supabase };
 }
 
 /**
  * Specifically checks if the user is an 'owner'.
+ * @deprecated Use AuthService for new logic.
  */
 export async function checkOwner() {
   return checkRole(['owner']);

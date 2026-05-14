@@ -9,7 +9,7 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const { error: authError, supabase, session } = await checkRole(['owner', 'accountant', 'viewer']);
+    const { error: authError, supabase, user } = await checkRole(['owner', 'accountant', 'viewer']);
     if (authError) return authError;
     const { id } = params;
 
@@ -26,7 +26,7 @@ export async function GET(
       .eq('id', id)
       .single();
 
-    const client = rawClient ;
+    const client = rawClient as any;
 
     if (clientError) throw clientError;
     if (!client) {
@@ -70,12 +70,12 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
-    const { error: authError, supabase, session } = await checkRole(['owner', 'accountant']);
+    const { error: authError, supabase, user } = await checkRole(['owner', 'accountant']);
     if (authError) return authError;
     const { id } = params;
     const body = await request.json();
 
-    const { data, error } = await (supabase.from('clients') )
+    const { data, error } = await (supabase.from('clients') as any)
       .update({
         name: body.name,
         contact_person: body.contact_person,

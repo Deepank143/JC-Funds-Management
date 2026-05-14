@@ -1,19 +1,25 @@
 import { NextResponse } from 'next/server';
-import { checkOwner } from '@/lib/auth-utils';
+import { getServerClient } from '@/lib/supabase';
+import { AuthService } from '@/lib/services/authService';
+import { AuditService } from '@/lib/services/auditService';
 
 export async function POST(
   request: Request,
   { params }: { params: { id: string } }
 ) {
   try {
-    const { error, supabase, session } = await checkOwner();
-    if (error) return error;
+    const supabase = getServerClient();
+    const authService = new AuthService(supabase);
+    const auditService = new AuditService(supabase);
+
+    const { error: authError, user } = await authService.checkOwner();
+    if (authError) return authError;
 
     const projectId = params.id;
     const body = await request.json();
 
     // 1. Mark project as completed with actual end date
-    const { error: projectError } = await (supabase.from('projects') )
+    const { error: projectError } = await (supabase.from('projects') as any)
       .update({
         status: 'completed',
         actual_end_date: new Date().toISOString().split('T')[0],
@@ -25,7 +31,7 @@ export async function POST(
 
     // ISSUE-06 FIX: Mark all non-paid milestones as 'paid' (write-off on settlement).
     // Without this, dashboard alerts keep firing for milestones on a closed project.
-    const { error: milestoneError } = await (supabase.from('milestones') )
+    const { error: milestoneError } = await (supabase.from('milestones') as any)
       .update({ status: 'paid' })
       .eq('project_id', projectId)
       .neq('status', 'paid'); // Only update the ones that aren't already paid
@@ -36,7 +42,7 @@ export async function POST(
     }
 
     // 2. Mark all outstanding expenses as written off (partial -> paid with write-off note)
-    await (supabase.from('expenses') )
+    await (supabase.from('expenses') as any)
       .update({
         payment_status: 'paid',
         notes: 'Written off during project settlement',
@@ -45,7 +51,7 @@ export async function POST(
       .in('payment_status', ['unpaid', 'partial']);
 
     // 3. Log settlement event in audit trail
-    await (supabase.from('audit_logs') ).insert({
+    await auditService.logAction({
       table_name: 'projects',
       record_id: projectId,
       action: 'SETTLEMENT',
@@ -55,7 +61,7 @@ export async function POST(
         write_off_reason: body.write_off_reason ?? 'Project finalized via Settlement Wizard',
       },
       reason: 'Project finalized via Settlement Wizard',
-      performed_by: session.user.id,
+      performed_by: user!.id,
     });
 
     return NextResponse.json({ success: true, status: 'completed' });
